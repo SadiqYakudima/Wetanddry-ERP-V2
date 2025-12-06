@@ -1,0 +1,265 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Fleet Management Module
+
+model Truck {
+  id              String    @id @default(cuid())
+  plateNumber     String    @unique
+  model           String
+  capacity        String    // e.g., "8m³"
+  status          String    @default("Available") // Available, In Use, Maintenance
+  purchaseDate    DateTime
+  mileage         Int       @default(0)
+  lastServiceDate DateTime?
+  nextServiceDate DateTime?
+  nextServiceMileage Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  maintenanceRecords MaintenanceRecord[]
+  maintenanceSchedules MaintenanceSchedule[]
+  parts              Part[]
+  fuelLogs           FuelLog[]
+  exceptionLogs      ExceptionLog[]
+}
+
+model MaintenanceRecord {
+  id          String   @id @default(cuid())
+  truckId     String
+  truck       Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  date        DateTime
+  type        String   // e.g., Oil Change, Tire Replacement
+  cost        Float
+  mileageAtService Int?
+  status      String   @default("Completed") // Completed, Scheduled, Overdue
+  notes       String?
+  performedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Maintenance Scheduler - Automated alerts for service intervals
+model MaintenanceSchedule {
+  id              String   @id @default(cuid())
+  truckId         String
+  truck           Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  type            String   // e.g., Oil Change, Brake Inspection, Full Service
+  intervalType    String   // "date" or "mileage" or "both"
+  intervalDays    Int?     // e.g., 90 days
+  intervalMileage Int?     // e.g., 10000 km
+  nextDueDate     DateTime?
+  nextDueMileage  Int?
+  lastCompletedDate DateTime?
+  isActive        Boolean  @default(true)
+  priority        String   @default("Normal") // Low, Normal, High, Critical
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Component Lifecycle Tracking - For high-wear components (Tires, Batteries)
+model Part {
+  id              String   @id @default(cuid())
+  truckId         String
+  truck           Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  partNumber      String
+  name            String
+  category        String   // e.g., Tire, Battery, Brake Pad, Filter
+  position        String?  // e.g., Front Left, Rear Right, Engine Bay
+  installedDate   DateTime
+  lifespanMonths  Int      // Expected lifespan in months
+  lifespanMileage Int?     // Expected lifespan in kilometers
+  mileageAtInstall Int?    // Truck mileage when part was installed
+  expectedReplacementDate DateTime?
+  purchasePrice   Float?
+  supplier        String?
+  warrantyExpiry  DateTime?
+  status          String   @default("Active") // Active, Due for Replacement, Replaced
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Spare Parts Inventory - Track spare parts by Part Number, Purchase Price, Quantity
+model SparePartInventory {
+  id            String   @id @default(cuid())
+  partNumber    String   @unique
+  name          String
+  category      String   // e.g., Tire, Battery, Filter, Brake Pad
+  description   String?
+  quantity      Int      @default(0)
+  minQuantity   Int      @default(1) // Threshold for low stock alert
+  purchasePrice Float
+  supplier      String?
+  location      String?  // Storage location
+  lastRestocked DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Inventory Management Module
+
+model StorageLocation {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g., "Silo 1", "Silo 2", "Main Warehouse"
+  type        String   // e.g., "Silo", "Warehouse", "Shelf"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       InventoryItem[]
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  name            String
+  sku             String?
+  category        String   // "Asset", "Consumable", "Equipment"
+  itemType        String   @default("General") // e.g., "Cement", "Aggregate", "Admixture", "General"
+  quantity        Float    @default(0)
+  maxCapacity     Float?   // Maximum storage capacity (for silos)
+  unit            String   // e.g., "kg", "liters", "pcs"
+  minThreshold    Float    @default(0)
+  unitCost        Float    @default(0)  // Cost per unit
+  totalValue      Float    @default(0)  // Calculated: quantity * unitCost
+  expiryDate      DateTime?
+  batchNumber     String?  // For traceability
+  supplier        String?
+  
+  locationId      String
+  location        StorageLocation @relation(fields: [locationId], references: [id])
+  
+  transactions    StockTransaction[]
+  materialRequests MaterialRequest[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StockTransaction {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        InventoryItem @relation(fields: [itemId], references: [id])
+  type        String   // "IN", "OUT", "ADJUSTMENT"
+  quantity    Float
+  reason      String?
+  status      String   @default("Pending") // "Pending", "Approved", "Rejected"
+  performedBy String?  // User ID or Name
+  approvedBy  String?  // Approver for the transaction
+  approvedAt  DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+// Material Request Workflow - For approval process
+model MaterialRequest {
+  id              String   @id @default(cuid())
+  requestType     String   // "Stock In", "Stock Out", "Transfer"
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id])
+  quantity        Float
+  fromLocationId  String?  // For transfers
+  toLocationId    String?  // For transfers
+  reason          String?
+  priority        String   @default("Normal") // "Low", "Normal", "High", "Urgent"
+  status          String   @default("Pending") // "Pending", "Approved", "Rejected", "Completed"
+  requestedBy     String
+  approvedBy      String?
+  approvedAt      DateTime?
+  completedAt     DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Production & Mixology Module
+
+model Recipe {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Standard Concrete (C25)"
+  description String?
+  ingredients RecipeIngredient[]
+  runs        ProductionRun[]
+  exceptionLogs ExceptionLog[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RecipeIngredient {
+  id           String   @id @default(cuid())
+  recipeId     String
+  recipe       Recipe   @relation(fields: [recipeId], references: [id])
+  materialName String   // Matches InventoryItem.name (e.g., "Portland Cement")
+  quantity     Float    // Amount required per 1 unit of production
+  unit         String   // e.g., "kg"
+}
+
+model ProductionRun {
+  id          String   @id @default(cuid())
+  recipeId    String
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+  quantity    Float    // Amount produced
+  status      String   @default("Completed")
+  createdAt   DateTime @default(now())
+}
+
+// Diesel & Fuel Intelligence Module
+
+model FuelLog {
+  id          String   @id @default(cuid())
+  truckId     String
+  truck       Truck    @relation(fields: [truckId], references: [id])
+  date        DateTime @default(now())
+  liters      Float
+  cost        Float
+  mileage     Int      // Mileage at time of fueling
+  efficiency  Float?   // Calculated km/L
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Exception Handling Module (Dump & Divert)
+
+model ExceptionLog {
+  id          String   @id @default(cuid())
+  type        String   // "Dump" or "Divert"
+  reason      String   // e.g., "Bad Mix", "Truck Breakdown", "Client Rejection"
+  quantity    Float    // Amount wasted/diverted
+  unit        String   // e.g., "m3"
+  
+  truckId     String?
+  truck       Truck?   @relation(fields: [truckId], references: [id])
+  
+  recipeId    String?
+  recipe      Recipe?  @relation(fields: [recipeId], references: [id])
+
+  notes       String?
+  reportedBy  String?
+  resolved    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// User Management Module
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   // "Super Admin", "Operations Manager", "Storekeeper", "Accountant", "Driver"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

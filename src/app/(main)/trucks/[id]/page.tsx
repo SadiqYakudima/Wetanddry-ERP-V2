@@ -1,0 +1,18 @@
+import { notFound } from 'next/navigation'
+import { getTruck } from '@/lib/actions/trucks'
+import TruckDetailsClient from '@/components/trucks/TruckDetailsClient'
+
+interface PageProps {
+    params: Promise<{ id: string }>
+}
+
+export default async function TruckDetailsPage({ params }: PageProps) {
+    const { id } = await params
+    const truck = await getTruck(id)
+
+    if (!truck) {
+        notFound()
+    }
+
+    return <TruckDetailsClient truck={truck} />
+}

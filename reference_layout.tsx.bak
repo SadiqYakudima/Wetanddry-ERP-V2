@@ -1,0 +1,692 @@
+import React, { useState } from 'react';
+import { LayoutDashboard, Truck, Package, Fuel, FlaskConical, Users, Settings, Bell, Search, Menu, ChevronDown, LogOut, Plus, Filter, Download, Eye, Edit, Trash2, Calendar, AlertCircle, CheckCircle, Upload, Save, ArrowLeft } from 'lucide-react';
+
+export default function GlobalLayoutStructure() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeModule, setActiveModule] = useState('dashboard');
+  const [truckScreen, setTruckScreen] = useState('list');
+  const [selectedTruck, setSelectedTruck] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Sample truck data
+  const trucks = [
+    { id: 1, plateNumber: 'ABC-123-XY', model: 'Mercedes Actros', capacity: '8m³', status: 'Available', lastMaintenance: '2025-10-15', mileage: '45,230 km' },
+    { id: 2, plateNumber: 'DEF-456-ZW', model: 'Volvo FMX', capacity: '10m³', status: 'In Use', lastMaintenance: '2025-09-20', mileage: '67,890 km' },
+    { id: 3, plateNumber: 'GHI-789-UV', model: 'MAN TGS', capacity: '6m³', status: 'Maintenance', lastMaintenance: '2025-11-01', mileage: '32,100 km' },
+    { id: 4, plateNumber: 'JKL-012-ST', model: 'Scania P-Series', capacity: '12m³', status: 'Available', lastMaintenance: '2025-10-28', mileage: '51,450 km' },
+    { id: 5, plateNumber: 'MNO-345-QR', model: 'Isuzu FVZ', capacity: '8m³', status: 'Available', lastMaintenance: '2025-11-05', mileage: '28,900 km' },
+  ];
+
+  const maintenanceHistory = [
+    { date: '2025-11-01', type: 'Oil Change', cost: '₦45,000', status: 'Completed', notes: 'Regular maintenance' },
+    { date: '2025-10-15', type: 'Tire Replacement', cost: '₦180,000', status: 'Completed', notes: 'Replaced front tires' },
+    { date: '2025-09-20', type: 'Brake Service', cost: '₦95,000', status: 'Completed', notes: 'Brake pads replaced' },
+  ];
+
+  const parts = [
+    { partNumber: 'TYR-001', name: 'Front Tire (Left)', category: 'Tire', installedDate: '2025-10-15', status: 'Active', lifespan: '2 years' },
+    { partNumber: 'TYR-002', name: 'Front Tire (Right)', category: 'Tire', installedDate: '2025-10-15', status: 'Active', lifespan: '2 years' },
+    { partNumber: 'BAT-001', name: 'Heavy Duty Battery', category: 'Battery', installedDate: '2025-08-10', status: 'Active', lifespan: '3 years' },
+  ];
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Available': return 'bg-green-100 text-green-800';
+      case 'In Use': return 'bg-blue-100 text-blue-800';
+      case 'Maintenance': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const modules = [
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { id: 'trucks', name: 'Truck & Asset Management', icon: Truck },
+    { id: 'inventory', name: 'Inventory Management', icon: Package },
+    { id: 'diesel', name: 'Diesel Management', icon: Fuel },
+    { id: 'mixology', name: 'Mixology (Recipes)', icon: FlaskConical },
+    { id: 'users', name: 'User Management', icon: Users },
+    { id: 'settings', name: 'Settings', icon: Settings },
+  ];
+
+  return (
+    <div className="h-screen flex bg-gray-50">
+      {/* Sidebar */}
+      <aside className={`bg-blue-900 text-white transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'} flex flex-col`}>
+        {/* Logo Area */}
+        <div className="p-4 border-b border-blue-800 flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <div>
+              <h1 className="text-xl font-bold">Wet & Dry Ltd</h1>
+              <p className="text-xs text-blue-300">Enterprise Management</p>
+            </div>
+          )}
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-2 hover:bg-blue-800 rounded"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          {modules.map((module) => {
+            const Icon = module.icon;
+            const isActive = activeModule === module.id;
+            return (
+              <button
+                key={module.id}
+                onClick={() => setActiveModule(module.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
+                  isActive 
+                    ? 'bg-blue-800 border-l-4 border-yellow-400' 
+                    : 'hover:bg-blue-800/50'
+                }`}
+              >
+                <Icon size={20} />
+                {!sidebarCollapsed && <span className="text-sm font-medium">{module.name}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* User Profile Area */}
+        <div className="p-4 border-t border-blue-800">
+          {!sidebarCollapsed ? (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center font-bold text-blue-900">
+                JD
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">John Doe</p>
+                <p className="text-xs text-blue-300">Admin</p>
+              </div>
+              <button className="p-2 hover:bg-blue-800 rounded">
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center font-bold text-blue-900 mx-auto">
+              JD
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Navigation Bar */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            {/* Search Bar */}
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search trucks, materials, records..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-4">
+            {/* Notifications */}
+            <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+              <Bell size={20} className="text-gray-600" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+
+            {/* Quick Actions Dropdown */}
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <span className="text-sm font-medium">Quick Actions</span>
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* Breadcrumb */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Home</span>
+              <span>/</span>
+              <span className="text-blue-600 font-medium">{modules.find(m => m.id === activeModule)?.name}</span>
+            </div>
+          </div>
+
+          {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {modules.find(m => m.id === activeModule)?.name}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {activeModule === 'dashboard' && 'Overview of key metrics and recent activity'}
+              {activeModule === 'trucks' && 'Manage vehicles, maintenance, and asset tracking'}
+              {activeModule === 'inventory' && 'Monitor stock levels, materials, and store locations'}
+              {activeModule === 'diesel' && 'Track fuel allocation, consumption, and efficiency'}
+              {activeModule === 'mixology' && 'Manage concrete recipes and production tracking'}
+              {activeModule === 'users' && 'Manage user accounts and access permissions'}
+              {activeModule === 'settings' && 'System configuration and preferences'}
+            </p>
+          </div>
+
+          {/* Content Area (Cards/Widgets Will Go Here) */}
+          {activeModule === 'dashboard' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-8">
+              <div className="text-center text-gray-400">
+                <p className="text-lg font-medium mb-2">Dashboard Content Area</p>
+                <p className="text-sm">Dashboard widgets, KPIs, and module-specific content will appear here</p>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 1</span>
+                  </div>
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 2</span>
+                  </div>
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Truck & Asset Management Module */}
+          {activeModule === 'trucks' && (
+            <div>
+              {/* Truck List View */}
+              {truckScreen === 'list' && (
+                <div className="space-y-6">
+                  {/* Header Actions */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1 max-w-2xl">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                          type="text"
+                          placeholder="Search by plate number or model..."
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <button 
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        <Filter size={20} />
+                        Filters
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        <Download size={20} />
+                        Export
+                      </button>
+                      <button 
+                        onClick={() => setTruckScreen('add')}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        <Plus size={20} />
+                        Add Truck
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filters Panel */}
+                  {showFilters && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-4 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option>All Status</option>
+                            <option>Available</option>
+                            <option>In Use</option>
+                            <option>Maintenance</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option>All Capacities</option>
+                            <option>6m³</option>
+                            <option>8m³</option>
+                            <option>10m³</option>
+                            <option>12m³</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Last Maintenance</label>
+                          <input type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        </div>
+                        <div className="flex items-end">
+                          <button className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                            Apply Filters
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 mb-1">Total Trucks</div>
+                      <div className="text-2xl font-bold text-gray-900">5</div>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="text-sm text-green-600 mb-1">Available</div>
+                      <div className="text-2xl font-bold text-green-700">3</div>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="text-sm text-blue-600 mb-1">In Use</div>
+                      <div className="text-2xl font-bold text-blue-700">1</div>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="text-sm text-red-600 mb-1">In Maintenance</div>
+                      <div className="text-2xl font-bold text-red-700">1</div>
+                    </div>
+                  </div>
+
+                  {/* Trucks Table */}
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Plate Number</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Model</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Capacity</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Maintenance</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Mileage</th>
+                          <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {trucks.map((truck) => (
+                          <tr key={truck.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{truck.plateNumber}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{truck.model}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{truck.capacity}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(truck.status)}`}>
+                                {truck.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{truck.lastMaintenance}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{truck.mileage}</td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedTruck(truck);
+                                    setTruckScreen('detail');
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                                  title="View Details"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                                <button 
+                                  onClick={() => setTruckScreen('edit')}
+                                  className="p-2 text-gray-600 hover:bg-gray-50 rounded"
+                                  title="Edit"
+                                >
+                                  <Edit size={18} />
+                                </button>
+                                <button className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Showing <span className="font-medium">1-5</span> of <span className="font-medium">5</span> results
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 text-sm">Previous</button>
+                        <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">1</button>
+                        <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 text-sm">Next</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Truck Detail View */}
+              {truckScreen === 'detail' && (
+                <div className="space-y-6">
+                  <button 
+                    onClick={() => setTruckScreen('list')}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                  >
+                    <ArrowLeft size={20} />
+                    Back to Trucks List
+                  </button>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div className="w-20 h-20 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Truck size={40} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-gray-900">{selectedTruck?.plateNumber}</h2>
+                          <p className="text-gray-600 mt-1">{selectedTruck?.model}</p>
+                          <div className="flex items-center gap-4 mt-3">
+                            <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(selectedTruck?.status)}`}>
+                              {selectedTruck?.status}
+                            </span>
+                            <span className="text-sm text-gray-600">Capacity: {selectedTruck?.capacity}</span>
+                            <span className="text-sm text-gray-600">Mileage: {selectedTruck?.mileage}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                          <Calendar size={18} />
+                          Schedule Maintenance
+                        </button>
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                          <Edit size={18} />
+                          Edit Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="border-b border-gray-200">
+                    <div className="flex gap-6">
+                      {['overview', 'maintenance', 'parts'].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab)}
+                          className={`pb-3 px-1 border-b-2 transition-colors capitalize ${
+                            activeTab === tab
+                              ? 'border-blue-600 text-blue-600 font-medium'
+                              : 'border-transparent text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tab Content */}
+                  {activeTab === 'overview' && (
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Truck Information</h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Plate Number:</span>
+                            <span className="font-medium text-gray-900">{selectedTruck?.plateNumber}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Model:</span>
+                            <span className="font-medium text-gray-900">{selectedTruck?.model}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Capacity:</span>
+                            <span className="font-medium text-gray-900">{selectedTruck?.capacity}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Purchase Date:</span>
+                            <span className="font-medium text-gray-900">2023-05-15</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Current Mileage:</span>
+                            <span className="font-medium text-gray-900">{selectedTruck?.mileage}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Status & Alerts</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <CheckCircle className="text-green-600 mt-0.5" size={20} />
+                            <div>
+                              <div className="font-medium text-green-900">Maintenance Up to Date</div>
+                              <div className="text-sm text-green-700">Last service: {selectedTruck?.lastMaintenance}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <AlertCircle className="text-yellow-600 mt-0.5" size={20} />
+                            <div>
+                              <div className="font-medium text-yellow-900">Tire Replacement Due Soon</div>
+                              <div className="text-sm text-yellow-700">Rear tires installed 18 months ago</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'maintenance' && (
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Maintenance History</h3>
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                          <Plus size={18} />
+                          Add Record
+                        </button>
+                      </div>
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Cost</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {maintenanceHistory.map((record, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm text-gray-900">{record.date}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{record.type}</td>
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.cost}</td>
+                              <td className="px-6 py-4">
+                                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  {record.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{record.notes}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {activeTab === 'parts' && (
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Installed Parts</h3>
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                          <Plus size={18} />
+                          Add Part
+                        </button>
+                      </div>
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Part Number</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Category</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Installed Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Lifespan</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {parts.map((part, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">{part.partNumber}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{part.name}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{part.category}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{part.installedDate}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{part.lifespan}</td>
+                              <td className="px-6 py-4">
+                                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  {part.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Truck Add/Edit Form */}
+              {(truckScreen === 'add' || truckScreen === 'edit') && (
+                <div className="space-y-6">
+                  <button 
+                    onClick={() => setTruckScreen('list')}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                  >
+                    <ArrowLeft size={20} />
+                    Back to Trucks List
+                  </button>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                      {truckScreen === 'add' ? 'Add New Truck' : 'Edit Truck Details'}
+                    </h2>
+
+                    <form className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Plate Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., ABC-123-XY"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Model <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Mercedes Actros"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Capacity <span className="text-red-500">*</span>
+                          </label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select capacity</option>
+                            <option>6m³</option>
+                            <option>8m³</option>
+                            <option>10m³</option>
+                            <option>12m³</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Purchase Date <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Current Mileage (km)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="e.g., 45230"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Status
+                          </label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Available</option>
+                            <option>In Use</option>
+                            <option>Maintenance</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Upload Truck Photo
+                        </label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer">
+                          <Upload className="mx-auto text-gray-400 mb-2" size={32} />
+                          <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => setTruckScreen('list')}
+                          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                        >
+                          <Save size={18} />
+                          {truckScreen === 'add' ? 'Add Truck' : 'Save Changes'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Other Modules Placeholder */}
+          {activeModule !== 'dashboard' && activeModule !== 'trucks' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-8">
+              <div className="text-center text-gray-400">
+                <p className="text-lg font-medium mb-2">Content Area</p>
+                <p className="text-sm">Module-specific content for {modules.find(m => m.id === activeModule)?.name} will appear here</p>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 1</span>
+                  </div>
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 2</span>
+                  </div>
+                  <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Widget/Card 3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
