@@ -12,6 +12,7 @@ export const authConfig = {
                 nextUrl.pathname.startsWith('/inventory') ||
                 nextUrl.pathname.startsWith('/production') ||
                 nextUrl.pathname.startsWith('/fuel') ||
+                nextUrl.pathname.startsWith('/finance') ||
                 nextUrl.pathname.startsWith('/exceptions') ||
                 nextUrl.pathname.startsWith('/users') ||
                 nextUrl.pathname.startsWith('/staff');
