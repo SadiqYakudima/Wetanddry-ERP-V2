@@ -17,13 +17,15 @@ interface Recipe {
     name: string
     totalWeight: number
     ingredients: {
+        id?: string
         materialName: string
         quantity: number
         unit: string
+        inventoryItemId?: string | null
         inventoryItem?: {
             id: string
             name: string
-        }
+        } | null
     }[]
 }
 

@@ -18,7 +18,7 @@ const StaffSchema = z.object({
     email: z.string().email('Invalid email').optional().or(z.literal('')),
     phone: z.string().min(1, 'Phone number is required'),
     address: z.string().min(1, 'Address is required'),
-    status: z.string().default('Active'),
+    status: z.string().min(1, 'Status is required'),
     joinedDate: z.string().min(1, 'Joined date is required'), // Input type="date" returns string
 })
 

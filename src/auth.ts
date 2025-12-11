@@ -17,7 +17,6 @@ async function getUser(email: string) {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
-    secret: 'dsjdEd0Kc7D1A7/0iaTLSe98woCbq2OSAmKqoXgNUvA=',
     callbacks: {
         async jwt({ token, user }) {
             if (user) {

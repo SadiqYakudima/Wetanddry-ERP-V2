@@ -33,12 +33,12 @@ interface StaffListProps {
 export default function StaffList({ initialStaff }: StaffListProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '')
-    const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'All')
+    const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '')
+    const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || 'All')
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
-        const params = new URLSearchParams(searchParams)
+        const params = new URLSearchParams(searchParams?.toString() || '')
         if (searchTerm) params.set('q', searchTerm)
         else params.delete('q')
 
@@ -50,7 +50,7 @@ export default function StaffList({ initialStaff }: StaffListProps) {
 
     const handleStatusChange = (status: string) => {
         setStatusFilter(status)
-        const params = new URLSearchParams(searchParams)
+        const params = new URLSearchParams(searchParams?.toString() || '')
         if (searchTerm) params.set('q', searchTerm)
 
         if (status && status !== 'All') params.set('status', status)

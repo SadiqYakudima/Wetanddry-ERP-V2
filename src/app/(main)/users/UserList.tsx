@@ -12,7 +12,7 @@ interface User {
     name: string;
     email: string;
     role: string;
-    createdAt?: string;
+    createdAt?: string | Date;
 }
 
 const roleColors: Record<string, string> = {

@@ -32,7 +32,7 @@ export default async function StaffDetailsPage({
                 </div>
             </div>
 
-            <StaffForm initialData={staff} isEditing />
+            <StaffForm initialData={{ ...staff, email: staff.email ?? undefined }} isEditing />
 
             <StaffDocuments staffId={staff.id} documents={staff.documents} />
         </div>

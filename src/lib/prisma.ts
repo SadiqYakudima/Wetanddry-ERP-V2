@@ -1,41 +1,41 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
+import { PrismaNeon } from '@prisma/adapter-neon'
 
 /**
- * Prisma Client configured for hybrid local/production setup:
- * - Development: Uses local SQLite file (file:./dev.db)
- * - Production: Uses Turso (libsql://)
+ * Prisma Client Configuration
  * 
- * Required environment variables for production:
- * - TURSO_DATABASE_URL: Your Turso database URL (libsql://...)
- * - TURSO_AUTH_TOKEN: Your Turso authentication token
+ * Uses Neon serverless driver when DATABASE_URL contains 'neon'
  */
 
-const prismaClientSingleton = () => {
-    // Check if we're in production with Turso credentials
-    const isTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN
-
-    if (isTurso) {
-        // Production: Use Turso with libSQL adapter
-        const libsql = createClient({
-            url: process.env.TURSO_DATABASE_URL!,
-            authToken: process.env.TURSO_AUTH_TOKEN,
-        })
-        const adapter = new PrismaLibSQL(libsql)
-        return new PrismaClient({ adapter })
-    } else {
-        // Development: Use local SQLite
-        return new PrismaClient()
-    }
-}
-
 declare global {
-    var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>
+    var prismaGlobal: PrismaClient | undefined
 }
 
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
+function createPrismaClient(): PrismaClient {
+    const databaseUrl = process.env.DATABASE_URL
+
+    // Use Neon adapter for Neon PostgreSQL
+    if (databaseUrl?.includes('neon')) {
+        const adapter = new PrismaNeon({ connectionString: databaseUrl })
+        return new PrismaClient({ adapter })
+    }
+
+    // Fallback to standard Prisma client
+    return new PrismaClient()
+}
+
+// Create new client each time in serverless environments
+// to avoid connection pooling issues
+let prisma: PrismaClient
+
+if (process.env.NODE_ENV === 'production') {
+    prisma = createPrismaClient()
+} else {
+    // In development, reuse the client across hot reloads
+    if (!globalThis.prismaGlobal) {
+        globalThis.prismaGlobal = createPrismaClient()
+    }
+    prisma = globalThis.prismaGlobal
+}
 
 export default prisma
-
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma

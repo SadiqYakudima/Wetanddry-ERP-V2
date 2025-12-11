@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
-import GlobalLayout from './components/layout/GlobalLayout';
+import GlobalLayout from './components/Layout/GlobalLayout';
 
 function App() {
   const { user, profile, loading } = useAuth();
