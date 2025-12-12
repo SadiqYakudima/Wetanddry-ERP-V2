@@ -320,17 +320,10 @@ export async function sendPushNotificationToMany(
 }
 
 /**
- * Check if web push is properly configured
+ * Check if web push is properly configured (server-side only)
  */
-export function isWebPushConfigured(): boolean {
+export async function isWebPushConfigured(): Promise<boolean> {
     return vapidConfigured
-}
-
-/**
- * Get the public VAPID key for client-side subscription
- */
-export function getVapidPublicKey(): string {
-    return VAPID_PUBLIC_KEY
 }
 
 /**
