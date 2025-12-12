@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma';
 import { Role, ROLE_PERMISSIONS, Permission } from '@/lib/permissions';
 import { auth } from '@/auth';
+import { sendPushNotification } from '@/lib/web-push';
 
 // ==================== NOTIFICATION TYPES ====================
 
@@ -96,6 +97,7 @@ const NOTIFICATION_CONFIG: Record<NotificationType, {
 // Create a single notification for a specific user
 export async function createNotification(input: CreateNotificationInput) {
     const config = NOTIFICATION_CONFIG[input.type];
+    const priority = input.priority || config?.defaultPriority || 'medium';
 
     try {
         const notification = await prisma.notification.create({
@@ -103,11 +105,27 @@ export async function createNotification(input: CreateNotificationInput) {
                 type: input.type,
                 title: input.title,
                 message: input.message,
-                priority: input.priority || config?.defaultPriority || 'medium',
+                priority,
                 userId: input.userId,
                 entityType: input.entityType,
                 entityId: input.entityId,
             },
+        });
+
+        // Send push notification in the background (non-blocking)
+        sendPushNotification(input.userId, {
+            title: input.title,
+            body: input.message,
+            priority: priority as 'low' | 'medium' | 'high' | 'critical',
+            data: {
+                type: input.type,
+                entityType: input.entityType,
+                entityId: input.entityId,
+                notificationId: notification.id,
+            },
+        }).catch(err => {
+            // Log but don't fail the notification creation
+            console.log('[Notifications] Push notification failed (non-critical):', err.message || err);
         });
 
         return { success: true, notification };
@@ -184,12 +202,13 @@ export async function notifyByRole(
 
 // Get notifications for the current user
 export async function getMyNotifications(limit = 20, includeRead = false) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return { success: false, error: 'Not authenticated', notifications: [] };
-    }
-
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            console.warn('[Notifications] getMyNotifications called without valid session');
+            return { success: false, error: 'Not authenticated', notifications: [] };
+        }
+
         const notifications = await prisma.notification.findMany({
             where: {
                 userId: session.user.id,
@@ -201,19 +220,22 @@ export async function getMyNotifications(limit = 20, includeRead = false) {
 
         return { success: true, notifications };
     } catch (error) {
-        console.error('Failed to get notifications:', error);
-        return { success: false, error: 'Failed to fetch notifications', notifications: [] };
+        console.error('[Notifications] Failed to get notifications:', error);
+        // Provide more specific error message
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notifications';
+        return { success: false, error: errorMessage, notifications: [] };
     }
 }
 
 // Get unread count for badge
 export async function getUnreadCount() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return 0;
-    }
-
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            // Don't log warning for unread count as it's called frequently during loading
+            return 0;
+        }
+
         const count = await prisma.notification.count({
             where: {
                 userId: session.user.id,
@@ -223,7 +245,7 @@ export async function getUnreadCount() {
 
         return count;
     } catch (error) {
-        console.error('Failed to get unread count:', error);
+        console.error('[Notifications] Failed to get unread count:', error);
         return 0;
     }
 }
@@ -280,6 +302,26 @@ export async function markAllAsRead() {
         console.error('Failed to mark all as read:', error);
         return { success: false, error: 'Failed to update notifications' };
     }
+}
+
+// Test push notification - for debugging
+export async function testPushNotificationForCurrentUser() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    const result = await sendPushNotification(session.user.id, {
+        title: '🔔 Test Notification',
+        body: 'Push notifications are working! You will receive alerts even when the app is in the background.',
+        priority: 'medium',
+        data: {
+            type: 'test',
+            url: '/dashboard',
+        },
+    });
+
+    return result;
 }
 
 // Delete old notifications (cleanup - can be called via cron)
@@ -412,4 +454,247 @@ export async function notifyRequester(
         entityType,
         entityId,
     });
+}
+
+// ==================== INVENTORY ALERT TRIGGERS ====================
+
+// Check and notify for low stock items
+export async function checkAndNotifyLowStock(itemId?: string) {
+    try {
+        const whereClause = itemId 
+            ? { id: itemId, status: 'Active' }
+            : { status: 'Active' };
+        
+        const items = await prisma.inventoryItem.findMany({
+            where: whereClause,
+            include: { location: true }
+        });
+
+        const lowStockItems = items.filter(item => item.quantity <= item.minThreshold);
+        
+        for (const item of lowStockItems) {
+            const config = NOTIFICATION_CONFIG.low_stock_alert;
+            await notifyByRole(config.targetRoles!, {
+                type: 'low_stock_alert',
+                title: `Low Stock Alert: ${item.name}`,
+                message: `${item.name} is below minimum threshold. Current: ${item.quantity.toLocaleString()} ${item.unit}, Minimum: ${item.minThreshold.toLocaleString()} ${item.unit}`,
+                priority: 'critical',
+                entityType: 'inventory_item',
+                entityId: item.id,
+            });
+        }
+
+        return { success: true, alertsSent: lowStockItems.length };
+    } catch (error) {
+        console.error('[Notifications] Failed to check low stock:', error);
+        return { success: false, error: 'Failed to check low stock' };
+    }
+}
+
+// Check and notify for critical silo levels (< 20%)
+export async function checkAndNotifySiloCritical(siloId?: string) {
+    try {
+        const whereClause = siloId 
+            ? { id: siloId, type: 'Silo', isActive: true }
+            : { type: 'Silo', isActive: true };
+        
+        const silos = await prisma.storageLocation.findMany({
+            where: whereClause,
+            include: { items: { where: { itemType: 'Cement' } } }
+        });
+
+        let alertsSent = 0;
+        
+        for (const silo of silos) {
+            const cementItem = silo.items[0];
+            if (!cementItem) continue;
+            
+            const maxCapacity = cementItem.maxCapacity || silo.capacity || 95000;
+            const percentage = (cementItem.quantity / maxCapacity) * 100;
+            
+            if (percentage < 20) {
+                const config = NOTIFICATION_CONFIG.silo_level_critical;
+                await notifyByRole(config.targetRoles!, {
+                    type: 'silo_level_critical',
+                    title: `Critical Silo Level: ${silo.name}`,
+                    message: `${silo.name} cement level is critically low at ${percentage.toFixed(1)}%. Current: ${cementItem.quantity.toLocaleString()} ${cementItem.unit}`,
+                    priority: 'critical',
+                    entityType: 'inventory_item',
+                    entityId: cementItem.id,
+                });
+                alertsSent++;
+            }
+        }
+
+        return { success: true, alertsSent };
+    } catch (error) {
+        console.error('[Notifications] Failed to check silo levels:', error);
+        return { success: false, error: 'Failed to check silo levels' };
+    }
+}
+
+// ==================== EXCEPTION TRIGGERS ====================
+
+export async function notifyNewException(
+    exceptionId: string,
+    type: string,
+    reason: string,
+    quantity: number
+) {
+    const config = NOTIFICATION_CONFIG.new_exception;
+    return notifyByRole(config.targetRoles!, {
+        type: 'new_exception',
+        title: `New Exception: ${type}`,
+        message: `A ${type.toLowerCase()} of ${quantity} m³ has been reported. Reason: ${reason}`,
+        priority: config.defaultPriority,
+        entityType: 'exception',
+        entityId: exceptionId,
+    });
+}
+
+export async function notifyExceptionResolved(exceptionId: string, type: string) {
+    const config = NOTIFICATION_CONFIG.exception_resolved;
+    return notifyByPermission(config.requiredPermissions![0], {
+        type: 'exception_resolved',
+        title: `Exception Resolved: ${type}`,
+        message: `The ${type.toLowerCase()} exception has been marked as resolved.`,
+        priority: config.defaultPriority,
+        entityType: 'exception',
+        entityId: exceptionId,
+    });
+}
+
+// ==================== PRODUCTION TRIGGERS ====================
+
+export async function notifyProductionCompleted(
+    runId: string,
+    recipeName: string,
+    quantity: number,
+    operatorName: string
+) {
+    const config = NOTIFICATION_CONFIG.production_completed;
+    return notifyByRole(config.targetRoles!, {
+        type: 'production_completed',
+        title: `Production Completed: ${recipeName}`,
+        message: `${quantity} m³ of ${recipeName} produced by ${operatorName}`,
+        priority: config.defaultPriority,
+        entityType: 'production',
+        entityId: runId,
+    });
+}
+
+export async function notifyMaterialShortage(
+    recipeName: string,
+    missingItem: string,
+    required: number,
+    available: number,
+    unit: string
+) {
+    const config = NOTIFICATION_CONFIG.material_shortage;
+    return notifyByRole(config.targetRoles!, {
+        type: 'material_shortage',
+        title: `Material Shortage: ${missingItem}`,
+        message: `Cannot produce ${recipeName} - insufficient ${missingItem}. Required: ${required.toLocaleString()} ${unit}, Available: ${available.toLocaleString()} ${unit}`,
+        priority: config.defaultPriority,
+        entityType: 'inventory_item',
+        entityId: undefined,
+    });
+}
+
+// ==================== USER/SYSTEM TRIGGERS ====================
+
+export async function notifyUserCreated(userId: string, userName: string, userRole: string) {
+    const config = NOTIFICATION_CONFIG.user_created;
+    return notifyByRole(config.targetRoles!, {
+        type: 'user_created',
+        title: `New User Created: ${userName}`,
+        message: `A new ${userRole} account has been created for ${userName}`,
+        priority: config.defaultPriority,
+        entityType: 'user',
+        entityId: userId,
+    });
+}
+
+export async function notifyRoleChanged(
+    userId: string,
+    userName: string,
+    oldRole: string,
+    newRole: string,
+    changedBy: string
+) {
+    const config = NOTIFICATION_CONFIG.role_changed;
+    return notifyByRole(config.targetRoles!, {
+        type: 'role_changed',
+        title: `Role Changed: ${userName}`,
+        message: `${userName}'s role changed from ${oldRole} to ${newRole} by ${changedBy}`,
+        priority: config.defaultPriority,
+        entityType: 'user',
+        entityId: userId,
+    });
+}
+
+// ==================== FLEET/MAINTENANCE TRIGGERS ====================
+
+export async function notifyMaintenanceDue(
+    truckId: string,
+    truckPlate: string,
+    maintenanceType: string,
+    dueType: 'date' | 'mileage',
+    dueInfo: string
+) {
+    const type = dueType === 'date' ? 'maintenance_due_date' : 'maintenance_due_mileage';
+    const config = NOTIFICATION_CONFIG[type];
+    return notifyByRole(config.targetRoles!, {
+        type,
+        title: `Maintenance Due: ${truckPlate}`,
+        message: `${maintenanceType} is due for ${truckPlate}. ${dueInfo}`,
+        priority: config.defaultPriority,
+        entityType: 'truck',
+        entityId: truckId,
+    });
+}
+
+export async function notifyDocumentExpiring(
+    truckId: string,
+    truckPlate: string,
+    documentType: string,
+    expiryDate: Date
+) {
+    const config = NOTIFICATION_CONFIG.document_expiring;
+    const daysUntil = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return notifyByRole(config.targetRoles!, {
+        type: 'document_expiring',
+        title: `Document Expiring: ${truckPlate}`,
+        message: `${documentType} for ${truckPlate} expires in ${daysUntil} days (${expiryDate.toLocaleDateString()})`,
+        priority: config.defaultPriority,
+        entityType: 'truck',
+        entityId: truckId,
+    });
+}
+
+export async function notifySparePartsLow(partId: string, partName: string, quantity: number, minQuantity: number) {
+    const config = NOTIFICATION_CONFIG.spare_parts_low;
+    return notifyByRole(config.targetRoles!, {
+        type: 'spare_parts_low',
+        title: `Low Spare Parts: ${partName}`,
+        message: `${partName} is ${quantity === 0 ? 'out of stock' : 'running low'}. Current: ${quantity}, Minimum: ${minQuantity}`,
+        priority: config.defaultPriority,
+        entityType: 'spare_part',
+        entityId: partId,
+    });
+}
+
+// ==================== SCHEDULED ALERT CHECKER ====================
+// This function can be called via a cron job or manually to check all alerts
+
+export async function runScheduledAlertChecks() {
+    console.log('[Notifications] Running scheduled alert checks...');
+    
+    const results = {
+        lowStock: await checkAndNotifyLowStock(),
+        siloCritical: await checkAndNotifySiloCritical(),
+    };
+    
+    console.log('[Notifications] Scheduled checks complete:', results);
+    return results;
 }

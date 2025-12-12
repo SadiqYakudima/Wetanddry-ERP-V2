@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Bell, X, Smartphone, Check } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Bell, X, Smartphone, Check, AlertCircle } from 'lucide-react'
 import { updatePushSubscription } from '@/lib/actions/notifications'
 
 interface PushNotificationPromptProps {
@@ -12,17 +12,17 @@ interface PushNotificationPromptProps {
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 
 // Check if push notifications are supported
-const isPushSupported = () => {
+const isPushSupported = (): boolean => {
+    if (typeof window === 'undefined') return false
     return (
-        typeof window !== 'undefined' &&
         'serviceWorker' in navigator &&
         'PushManager' in window &&
         'Notification' in window
     )
 }
 
-// Convert VAPID key to Uint8Array
-const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+// Convert VAPID key to Uint8Array for subscription
+const urlBase64ToUint8Array = (base64String: string): ArrayBuffer => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
     const rawData = window.atob(base64)
@@ -30,7 +30,7 @@ const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
     for (let i = 0; i < rawData.length; ++i) {
         outputArray[i] = rawData.charCodeAt(i)
     }
-    return outputArray
+    return outputArray.buffer
 }
 
 export default function PushNotificationPrompt({ onClose, showOnMount = true }: PushNotificationPromptProps) {
@@ -44,30 +44,51 @@ export default function PushNotificationPrompt({ onClose, showOnMount = true }: 
         const checkAndShow = async () => {
             if (!showOnMount || !isPushSupported()) return
 
+            // Don't show if VAPID key is not configured
+            if (!VAPID_PUBLIC_KEY) {
+                console.log('[Push] VAPID key not configured, skipping prompt')
+                return
+            }
+
             // Check if user has already made a decision
             const hasSeenPrompt = localStorage.getItem('push-notification-prompted')
             if (hasSeenPrompt) return
 
             // Check current permission status
             const permission = Notification.permission
-            if (permission === 'granted' || permission === 'denied') {
+            if (permission === 'granted') {
+                // Already granted - check if we have a subscription
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration()
+                    if (registration) {
+                        const subscription = await registration.pushManager.getSubscription()
+                        if (subscription) {
+                            // Already subscribed
+                            localStorage.setItem('push-notification-prompted', 'true')
+                            return
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Push] Error checking subscription:', err)
+                }
+            } else if (permission === 'denied') {
                 localStorage.setItem('push-notification-prompted', 'true')
                 return
             }
 
-            // Show prompt after a short delay
-            setTimeout(() => setIsVisible(true), 2000)
+            // Show prompt after a short delay (let page load first)
+            setTimeout(() => setIsVisible(true), 3000)
         }
 
         checkAndShow()
     }, [showOnMount])
 
-    const handleEnable = async () => {
+    const handleEnable = useCallback(async () => {
         setIsLoading(true)
         setErrorMessage('')
 
         try {
-            // Request notification permission
+            // Step 1: Request notification permission
             const permission = await Notification.requestPermission()
 
             if (permission === 'denied') {
@@ -82,63 +103,73 @@ export default function PushNotificationPrompt({ onClose, showOnMount = true }: 
                 return
             }
 
-            // Register service worker if not already registered
+            // Step 2: Ensure service worker is registered
             let registration = await navigator.serviceWorker.getRegistration()
             if (!registration) {
                 registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                // Wait for the service worker to be ready
                 await navigator.serviceWorker.ready
             }
 
-            // Subscribe to push notifications
+            // Step 3: Subscribe to push notifications (if VAPID key is configured)
+            let subscriptionJson: string | null = null
+            
             if (VAPID_PUBLIC_KEY) {
                 try {
-                    const subscription = await registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-                    })
-
-                    // Save subscription to server
-                    const result = await updatePushSubscription(JSON.stringify(subscription), true)
-                    if (!result.success) {
-                        throw new Error(result.error || 'Failed to save subscription')
+                    // Check for existing subscription
+                    let subscription = await registration.pushManager.getSubscription()
+                    
+                    if (!subscription) {
+                        // Create new subscription
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                        })
                     }
-                } catch (subError) {
-                    console.warn('Push subscription failed (VAPID key may not be configured):', subError)
-                    // Still mark as success - in-app notifications will work
+
+                    subscriptionJson = JSON.stringify(subscription)
+                    console.log('[Push] Subscription created successfully')
+                } catch (subError: any) {
+                    console.warn('[Push] Push subscription failed:', subError.message)
+                    // Continue anyway - in-app notifications will still work
                 }
             }
 
-            // Save preference
-            await updatePushSubscription(null, true)
+            // Step 4: Save subscription to server
+            const result = await updatePushSubscription(subscriptionJson, true)
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to save subscription')
+            }
 
             setStatus('success')
             localStorage.setItem('push-notification-prompted', 'true')
 
-            // Close after success
+            // Close after showing success
             setTimeout(() => {
                 setIsVisible(false)
                 onClose?.()
-            }, 2000)
-        } catch (error) {
-            console.error('Failed to enable push notifications:', error)
+            }, 2500)
+
+        } catch (error: any) {
+            console.error('[Push] Failed to enable push notifications:', error)
             setStatus('error')
-            setErrorMessage('Something went wrong. Please try again.')
+            setErrorMessage(error.message || 'Something went wrong. Please try again.')
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [onClose])
 
-    const handleDismiss = () => {
+    const handleDismiss = useCallback(() => {
         localStorage.setItem('push-notification-prompted', 'true')
         setIsVisible(false)
         onClose?.()
-    }
+    }, [onClose])
 
-    const handleLater = () => {
+    const handleLater = useCallback(() => {
         // Don't persist - will show again next session
         setIsVisible(false)
         onClose?.()
-    }
+    }, [onClose])
 
     if (!isVisible || !isPushSupported()) {
         return null
@@ -184,6 +215,30 @@ export default function PushNotificationPrompt({ onClose, showOnMount = true }: 
                             Got it
                         </button>
                     </div>
+                ) : status === 'error' ? (
+                    // Error state
+                    <div className="text-center py-4">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Something went wrong</h3>
+                        <p className="text-sm text-gray-500 mb-4">{errorMessage}</p>
+                        <div className="flex gap-2 justify-center">
+                            <button
+                                onClick={() => setStatus('idle')}
+                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Try again
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                                onClick={handleDismiss}
+                                className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
                 ) : (
                     // Default prompt state
                     <>
@@ -214,10 +269,6 @@ export default function PushNotificationPrompt({ onClose, showOnMount = true }: 
                                 </li>
                             ))}
                         </ul>
-
-                        {errorMessage && (
-                            <p className="text-sm text-red-500 mb-4">{errorMessage}</p>
-                        )}
 
                         {/* Actions */}
                         <div className="flex gap-3">
@@ -266,4 +317,32 @@ export function usePushNotificationPrompt() {
     const close = () => setShowPrompt(false)
 
     return { showPrompt, trigger, close }
+}
+
+// Utility to check push subscription status
+export async function checkPushSubscription(): Promise<{
+    supported: boolean
+    permission: NotificationPermission | 'unsupported'
+    subscribed: boolean
+}> {
+    if (!isPushSupported()) {
+        return { supported: false, permission: 'unsupported', subscribed: false }
+    }
+
+    const permission = Notification.permission
+    let subscribed = false
+
+    if (permission === 'granted') {
+        try {
+            const registration = await navigator.serviceWorker.getRegistration()
+            if (registration) {
+                const subscription = await registration.pushManager.getSubscription()
+                subscribed = !!subscription
+            }
+        } catch {
+            // Ignore errors
+        }
+    }
+
+    return { supported: true, permission, subscribed }
 }

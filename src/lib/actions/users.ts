@@ -7,6 +7,7 @@ import { checkPermission } from '@/lib/permissions'
 import { Role } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { notifyUserCreated, notifyRoleChanged } from '@/lib/actions/notifications'
 
 // Validation schema for user creation
 const CreateUserSchema = z.object({
@@ -104,6 +105,9 @@ export async function createUser(data: {
             }
         })
 
+        // Notify super admins about the new user
+        notifyUserCreated(user.id, user.name!, user.role!).catch(console.error)
+
         revalidatePath('/users')
         return { success: true, data: user }
     } catch (error) {
@@ -136,6 +140,11 @@ export async function updateUserRole(userId: string, newRole: string) {
     }
 
     try {
+        // Get current user to track role change
+        const currentUser = await prisma.user.findUnique({ where: { id: userId } })
+        if (!currentUser) return { success: false, error: 'User not found' }
+        const oldRole = currentUser.role
+
         const user = await prisma.user.update({
             where: { id: userId },
             data: {
@@ -143,6 +152,18 @@ export async function updateUserRole(userId: string, newRole: string) {
                 updatedBy: session.user.id, // Audit: who made this change
             }
         })
+
+        // Notify super admins about the role change
+        if (oldRole !== newRole) {
+            notifyRoleChanged(
+                userId, 
+                user.name!, 
+                oldRole!, 
+                newRole, 
+                session.user.name || 'Admin'
+            ).catch(console.error)
+        }
+
         revalidatePath('/users')
         return { success: true, data: user }
     } catch (error) {

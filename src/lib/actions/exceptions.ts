@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkPermission, hasPermission } from '@/lib/permissions'
+import { notifyNewException, notifyExceptionResolved } from '@/lib/actions/notifications'
 
 
 export async function getExceptions() {
@@ -36,7 +37,7 @@ export async function logException(formData: FormData) {
         throw new Error('Invalid input')
     }
 
-    await prisma.exceptionLog.create({
+    const exception = await prisma.exceptionLog.create({
         data: {
             type,
             reason,
@@ -49,6 +50,9 @@ export async function logException(formData: FormData) {
         }
     })
 
+    // Notify managers/admins about the new exception
+    notifyNewException(exception.id, type, reason, quantity).catch(console.error)
+
     revalidatePath('/exceptions')
 }
 
@@ -57,9 +61,16 @@ export async function resolveException(id: string) {
     if (!session?.user?.role) throw new Error('Unauthorized')
     checkPermission(session.user.role, 'manage_exceptions')
 
+    const exception = await prisma.exceptionLog.findUnique({ where: { id } })
+    if (!exception) throw new Error('Exception not found')
+
     await prisma.exceptionLog.update({
         where: { id },
         data: { resolved: true }
     })
+
+    // Notify all users with view_exceptions permission that this exception is resolved
+    notifyExceptionResolved(id, exception.type).catch(console.error)
+
     revalidatePath('/exceptions')
 }

@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, Check, CheckCheck, Clock, AlertTriangle, Package, Truck, Fuel, FlaskConical, Users, X, Loader2 } from 'lucide-react'
+import { Bell, Check, CheckCheck, Clock, AlertTriangle, Package, Truck, FlaskConical, Users, X, Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { getMyNotifications, getUnreadCount, markAsRead, markAllAsRead } from '@/lib/actions/notifications'
 import { formatDistanceToNow } from 'date-fns'
+import type { Session } from 'next-auth'
 
 // Notification type to icon/color mapping
 const NOTIFICATION_STYLES: Record<string, { icon: any; color: string; bgColor: string }> = {
@@ -75,31 +76,44 @@ const getEntityRoute = (entityType: string | null, entityId: string | null): str
     return routes[entityType] || null
 }
 
-export default function NotificationBell() {
-    const { data: session, status } = useSession()
+interface NotificationBellProps {
+    initialSession?: Session | null;
+}
+
+export default function NotificationBell({ initialSession }: NotificationBellProps) {
+    const { data: clientSession, status } = useSession()
+    
+    // Use initialSession from server if available, fallback to client session
+    const session = clientSession || initialSession
+    // Consider authenticated if we have either server session or client session is authenticated
+    const isAuthenticated = !!session?.user?.id || status === 'authenticated'
+    const isLoading = !session && status === 'loading'
     const [isOpen, setIsOpen] = useState(false)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingNotifications, setIsLoadingNotifications] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
 
     // Fetch unread count on mount and periodically
     const fetchUnreadCount = useCallback(async () => {
-        if (status !== 'authenticated') return
+        if (!isAuthenticated) return
         try {
             const count = await getUnreadCount()
             setUnreadCount(count)
         } catch (err) {
             console.error('Failed to fetch unread count:', err)
         }
-    }, [status])
+    }, [isAuthenticated])
 
     // Fetch notifications when dropdown opens
     const fetchNotifications = useCallback(async () => {
-        if (status !== 'authenticated') return
-        setIsLoading(true)
+        if (!isAuthenticated) {
+            setError('Session not ready. Please try again.')
+            return
+        }
+        setIsLoadingNotifications(true)
         setError(null)
         try {
             const result = await getMyNotifications(20, true)
@@ -110,11 +124,11 @@ export default function NotificationBell() {
             }
         } catch (err) {
             console.error('Failed to fetch notifications:', err)
-            setError('Failed to load notifications')
+            setError('Failed to load notifications. Please try again.')
         } finally {
-            setIsLoading(false)
+            setIsLoadingNotifications(false)
         }
-    }, [status])
+    }, [isAuthenticated])
 
     // Initial load and polling
     useEffect(() => {
@@ -199,7 +213,8 @@ export default function NotificationBell() {
         setIsOpen(false)
     }
 
-    if (status !== 'authenticated') {
+    // Hide only if explicitly unauthenticated (no server session AND client says unauthenticated)
+    if (!initialSession && status === 'unauthenticated') {
         return null
     }
 
@@ -208,13 +223,18 @@ export default function NotificationBell() {
             {/* Bell Button */}
             <button
                 ref={buttonRef}
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                onClick={() => !isLoading && setIsOpen(!isOpen)}
+                disabled={isLoading}
+                className={`relative p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isLoading 
+                        ? 'text-gray-300 cursor-wait' 
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
                 aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
                 aria-expanded={isOpen}
                 aria-haspopup="true"
             >
-                <Bell size={22} />
+                <Bell size={22} className={isLoading ? 'animate-pulse' : ''} />
 
                 {/* Badge */}
                 {unreadCount > 0 && (
@@ -247,7 +267,7 @@ export default function NotificationBell() {
 
                     {/* Content */}
                     <div className="overflow-y-auto max-h-[calc(70vh-56px)]">
-                        {isLoading ? (
+                        {isLoadingNotifications ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
                             </div>

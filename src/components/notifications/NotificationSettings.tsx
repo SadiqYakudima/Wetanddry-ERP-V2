@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Smartphone, Check, Loader2, AlertTriangle, Package, Truck, FlaskConical, Users } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { getPushPreference, updatePushSubscription, updateNotificationPreferences } from '@/lib/actions/notifications'
+import { getPushPreference, updatePushSubscription, updateNotificationPreferences, testPushNotificationForCurrentUser } from '@/lib/actions/notifications'
 import type { NotificationType } from '@/lib/actions/notifications'
 
 // Notification categories for settings UI
@@ -247,6 +247,37 @@ export default function NotificationSettings() {
                     <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
                         <Smartphone size={16} />
                         Try using Chrome, Edge, or Firefox for push notification support
+                    </div>
+                )}
+
+                {/* Test Button */}
+                {pushEnabled && pushSupported && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                        <button
+                            onClick={async () => {
+                                setIsSaving(true)
+                                try {
+                                    const result = await testPushNotificationForCurrentUser()
+                                    if (result.success) {
+                                        setSuccessMessage('Test notification sent! Check your notifications.')
+                                    } else {
+                                        setError(result.error || 'Failed to send test notification')
+                                    }
+                                } catch (err) {
+                                    setError('Failed to send test notification')
+                                } finally {
+                                    setIsSaving(false)
+                                    setTimeout(() => {
+                                        setSuccessMessage(null)
+                                        setError(null)
+                                    }, 3000)
+                                }
+                            }}
+                            disabled={isSaving}
+                            className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                        >
+                            Send Test Notification
+                        </button>
                     </div>
                 )}
             </div>

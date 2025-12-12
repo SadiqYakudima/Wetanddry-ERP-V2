@@ -3,8 +3,13 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import type { Session } from 'next-auth';
 
-export function Header() {
+interface HeaderProps {
+    session?: Session | null;
+}
+
+export function Header({ session }: HeaderProps) {
     return (
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-4 flex-1">
@@ -24,7 +29,7 @@ export function Header() {
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
                 {/* Notifications */}
-                <NotificationBell />
+                <NotificationBell initialSession={session} />
             </div>
         </header>
     );

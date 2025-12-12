@@ -4,7 +4,12 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkPermission } from '@/lib/permissions'
-import { notifyApprovers, notifyRequester } from '@/lib/actions/notifications'
+import { 
+    notifyApprovers, 
+    notifyRequester, 
+    checkAndNotifyLowStock,
+    checkAndNotifySiloCritical 
+} from '@/lib/actions/notifications'
 
 // ==================== INVENTORY STATS & QUERIES ====================
 
@@ -263,6 +268,10 @@ export async function createMaterialRequest(formData: FormData) {
     if (!session?.user?.role) throw new Error('Unauthorized')
     checkPermission(session.user.role, 'create_material_requests')
 
+    // Get item details for notification
+    const item = await prisma.inventoryItem.findUnique({ where: { id: itemId } })
+    if (!item) throw new Error('Item not found')
+
     const request = await prisma.materialRequest.create({
         data: {
             requestType,
@@ -276,6 +285,14 @@ export async function createMaterialRequest(formData: FormData) {
         }
     })
 
+    // Notify approvers about the new material request
+    notifyApprovers(
+        'material_request_pending',
+        `Material Request: ${item.name}`,
+        `${requestedBy} submitted a ${requestType.toLowerCase()} request for ${quantity} ${item.unit} of ${item.name}. Priority: ${priority}`,
+        'material_request',
+        request.id
+    ).catch(console.error)
 
     revalidatePath('/inventory')
     revalidatePath('/inventory/requests')
@@ -357,6 +374,23 @@ export async function approveMaterialRequest(requestId: string, approvedBy: stri
         })
     })
 
+    // Notify the requester that their request was approved
+    const requester = await prisma.user.findFirst({ where: { name: request.requestedBy } })
+    if (requester) {
+        notifyRequester(
+            requester.id,
+            'request_approved',
+            `Request Approved: ${request.item.name}`,
+            `Your ${request.requestType.toLowerCase()} request for ${request.quantity} ${request.item.unit} of ${request.item.name} has been approved by ${approvedBy}`,
+            'material_request',
+            requestId
+        ).catch(console.error)
+    }
+
+    // Check for low stock after stock out
+    if (request.requestType !== 'Stock In') {
+        checkAndNotifyLowStock(request.itemId).catch(console.error)
+    }
 
     revalidatePath('/inventory')
     revalidatePath('/inventory/requests')
@@ -364,6 +398,13 @@ export async function approveMaterialRequest(requestId: string, approvedBy: stri
 }
 
 export async function rejectMaterialRequest(requestId: string, rejectedBy: string, rejectionReason: string) {
+    const request = await prisma.materialRequest.findUnique({
+        where: { id: requestId },
+        include: { item: true }
+    })
+
+    if (!request) throw new Error('Request not found')
+
     await prisma.materialRequest.update({
         where: { id: requestId },
         data: {
@@ -373,6 +414,19 @@ export async function rejectMaterialRequest(requestId: string, rejectedBy: strin
             rejectionReason
         }
     })
+
+    // Notify the requester that their request was rejected
+    const requester = await prisma.user.findFirst({ where: { name: request.requestedBy } })
+    if (requester) {
+        notifyRequester(
+            requester.id,
+            'request_rejected',
+            `Request Rejected: ${request.item.name}`,
+            `Your ${request.requestType.toLowerCase()} request for ${request.quantity} ${request.item.unit} of ${request.item.name} was rejected. Reason: ${rejectionReason}`,
+            'material_request',
+            requestId
+        ).catch(console.error)
+    }
 
     revalidatePath('/inventory')
     revalidatePath('/inventory/requests')
@@ -1140,6 +1194,31 @@ export async function approveStockTransaction(transactionId: string) {
         })
     })
 
+    // Notify the requester that their transaction was approved
+    if (transaction.performedBy) {
+        const requester = await prisma.user.findFirst({ where: { name: transaction.performedBy } })
+        if (requester) {
+            notifyRequester(
+                requester.id,
+                'transaction_approved',
+                `Transaction Approved: ${transaction.item.name}`,
+                `Your stock ${transaction.type.toLowerCase()} of ${transaction.quantity} ${transaction.item.unit} for ${transaction.item.name} has been approved by ${session.user.name}`,
+                'stock_transaction',
+                transactionId
+            ).catch(console.error)
+        }
+    }
+
+    // Check for low stock after stock out
+    if (transaction.type === 'OUT') {
+        checkAndNotifyLowStock(transaction.itemId).catch(console.error)
+    }
+
+    // Check for silo critical levels if it's a cement item
+    if (transaction.item.itemType === 'Cement') {
+        checkAndNotifySiloCritical().catch(console.error)
+    }
+
     revalidatePath('/inventory')
     return { success: true }
 }
@@ -1151,7 +1230,8 @@ export async function rejectStockTransaction(transactionId: string, reason?: str
     checkPermission(session.user.role, 'approve_stock_transactions')
 
     const transaction = await prisma.stockTransaction.findUnique({
-        where: { id: transactionId }
+        where: { id: transactionId },
+        include: { item: true }
     })
     if (!transaction) throw new Error('Transaction not found')
     if (transaction.status !== 'Pending') throw new Error('Transaction is not pending approval')
@@ -1165,6 +1245,21 @@ export async function rejectStockTransaction(transactionId: string, reason?: str
             notes: reason ? `${transaction.notes || ''}\nRejection reason: ${reason}`.trim() : transaction.notes
         }
     })
+
+    // Notify the requester that their transaction was rejected
+    if (transaction.performedBy) {
+        const requester = await prisma.user.findFirst({ where: { name: transaction.performedBy } })
+        if (requester) {
+            notifyRequester(
+                requester.id,
+                'transaction_rejected',
+                `Transaction Rejected: ${transaction.item.name}`,
+                `Your stock ${transaction.type.toLowerCase()} of ${transaction.quantity} ${transaction.item.unit} for ${transaction.item.name} was rejected.${reason ? ` Reason: ${reason}` : ''}`,
+                'stock_transaction',
+                transactionId
+            ).catch(console.error)
+        }
+    }
 
     revalidatePath('/inventory')
     return { success: true }

@@ -6,6 +6,11 @@ import prisma from '@/lib/prisma'
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary'
 import { auth } from '@/auth'
 import { checkPermission } from '@/lib/permissions'
+import { 
+    notifyMaintenanceDue, 
+    notifyDocumentExpiring, 
+    notifySparePartsLow 
+} from '@/lib/actions/notifications'
 
 // ============ TRUCK CRUD OPERATIONS ============
 
@@ -630,4 +635,148 @@ export async function deleteTruckDocument(id: string, truckId: string) {
         console.error('Failed to delete document:', error)
         throw new Error('Failed to delete document')
     }
+}
+
+// ============ SCHEDULED FLEET ALERT CHECKS ============
+
+// Check for maintenance due (by date) and send notifications
+export async function checkMaintenanceDueByDate() {
+    const now = new Date()
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    
+    try {
+        const dueSchedules = await prisma.maintenanceSchedule.findMany({
+            where: {
+                isActive: true,
+                nextDueDate: {
+                    lte: sevenDaysFromNow,
+                    gte: now
+                }
+            },
+            include: { truck: true }
+        })
+
+        for (const schedule of dueSchedules) {
+            const daysUntil = Math.ceil((schedule.nextDueDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            await notifyMaintenanceDue(
+                schedule.truckId,
+                schedule.truck.plateNumber,
+                schedule.type,
+                'date',
+                `Due in ${daysUntil} days (${schedule.nextDueDate!.toLocaleDateString()})`
+            )
+        }
+
+        return { success: true, count: dueSchedules.length }
+    } catch (error) {
+        console.error('[Fleet] Failed to check maintenance due dates:', error)
+        return { success: false, error: 'Failed to check maintenance' }
+    }
+}
+
+// Check for maintenance due (by mileage) and send notifications
+export async function checkMaintenanceDueByMileage() {
+    try {
+        const schedules = await prisma.maintenanceSchedule.findMany({
+            where: {
+                isActive: true,
+                nextDueMileage: { not: null }
+            },
+            include: { truck: true }
+        })
+
+        let notificationsSent = 0
+        
+        for (const schedule of schedules) {
+            const currentMileage = schedule.truck.mileage
+            const dueMileage = schedule.nextDueMileage!
+            
+            // Alert when within 500km of due mileage
+            if (currentMileage >= dueMileage - 500) {
+                await notifyMaintenanceDue(
+                    schedule.truckId,
+                    schedule.truck.plateNumber,
+                    schedule.type,
+                    'mileage',
+                    `Current: ${currentMileage.toLocaleString()} km, Due at: ${dueMileage.toLocaleString()} km`
+                )
+                notificationsSent++
+            }
+        }
+
+        return { success: true, count: notificationsSent }
+    } catch (error) {
+        console.error('[Fleet] Failed to check maintenance mileage:', error)
+        return { success: false, error: 'Failed to check maintenance' }
+    }
+}
+
+// Check for expiring documents and send notifications
+export async function checkExpiringDocuments() {
+    const now = new Date()
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    
+    try {
+        const expiringDocs = await prisma.truckDocument.findMany({
+            where: {
+                expiryDate: {
+                    lte: thirtyDaysFromNow,
+                    gte: now
+                }
+            },
+            include: { truck: true }
+        })
+
+        for (const doc of expiringDocs) {
+            await notifyDocumentExpiring(
+                doc.truckId,
+                doc.truck.plateNumber,
+                doc.type,
+                doc.expiryDate!
+            )
+        }
+
+        return { success: true, count: expiringDocs.length }
+    } catch (error) {
+        console.error('[Fleet] Failed to check expiring documents:', error)
+        return { success: false, error: 'Failed to check documents' }
+    }
+}
+
+// Check for low spare parts and send notifications
+export async function checkLowSpareParts() {
+    try {
+        // Fetch all parts and filter manually (Prisma doesn't support field-to-field comparison)
+        const allParts = await prisma.sparePartInventory.findMany()
+        const partsToNotify = allParts.filter(part => part.quantity <= part.minQuantity)
+
+        for (const part of partsToNotify) {
+            await notifySparePartsLow(
+                part.id,
+                part.name,
+                part.quantity,
+                part.minQuantity
+            )
+        }
+
+        return { success: true, count: partsToNotify.length }
+    } catch (error) {
+        console.error('[Fleet] Failed to check spare parts:', error)
+        return { success: false, error: 'Failed to check spare parts' }
+    }
+}
+
+// Run all fleet alert checks (can be called via cron job)
+export async function runFleetAlertChecks() {
+    console.log('[Fleet] Running scheduled fleet alert checks...')
+    
+    const results = {
+        maintenanceDate: await checkMaintenanceDueByDate(),
+        maintenanceMileage: await checkMaintenanceDueByMileage(),
+        expiringDocuments: await checkExpiringDocuments(),
+        lowSpareParts: await checkLowSpareParts(),
+    }
+    
+    console.log('[Fleet] Fleet alert checks complete:', results)
+    return results
 }

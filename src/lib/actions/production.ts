@@ -1,11 +1,15 @@
 'use server'
 
-
-
 import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkPermission } from '@/lib/permissions'
+import { 
+    notifyProductionCompleted, 
+    notifyMaterialShortage,
+    checkAndNotifyLowStock,
+    checkAndNotifySiloCritical 
+} from '@/lib/actions/notifications'
 
 // ============ RECIPE MANAGEMENT ============
 
@@ -300,6 +304,18 @@ export async function createProductionRun(formData: FormData) {
             })
         })
 
+        // Notify about production completion
+        notifyProductionCompleted(
+            productionRun.id,
+            productionRun.recipe.name,
+            quantity,
+            operatorName || 'System'
+        ).catch(console.error)
+
+        // Check for low stock and critical silo levels after production
+        checkAndNotifyLowStock().catch(console.error)
+        checkAndNotifySiloCritical(siloId).catch(console.error)
+
         revalidatePath('/production')
         return {
             success: true,
@@ -309,6 +325,26 @@ export async function createProductionRun(formData: FormData) {
         }
 
     } catch (error: any) {
+        // Check if error is due to insufficient stock - notify about shortage
+        if (error.message?.includes('Insufficient')) {
+            // Extract item name from error message
+            const match = error.message.match(/Insufficient (?:stock for |cement in )?([^.]+)/i)
+            const itemName = match ? match[1] : 'materials'
+            
+            // Get recipe name for notification
+            const recipeId = formData.get('recipeId') as string
+            const recipe = await prisma.recipe.findUnique({ where: { id: recipeId } })
+            
+            if (recipe) {
+                notifyMaterialShortage(
+                    recipe.name,
+                    itemName,
+                    0, // We don't have exact numbers in catch block
+                    0,
+                    ''
+                ).catch(console.error)
+            }
+        }
         return { success: false, message: error.message || 'An unexpected error occurred during production' }
     }
 }

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NextAuthProvider from "@/components/providers/NextAuthProvider";
+import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from 'sonner';
 
 const geistSans = Geist({
@@ -18,12 +19,15 @@ export const metadata: Metadata = {
   title: "Wet N Dry ERP",
   description: "Enterprise Resource Planning for Wet N Dry Concrete Batching Operations",
   manifest: "/manifest.json",
-  themeColor: "#3b82f6",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "WetDry ERP",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({
@@ -38,7 +42,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <NextAuthProvider>
-          {children}
+          <ServiceWorkerProvider>
+            {children}
+          </ServiceWorkerProvider>
         </NextAuthProvider>
         <Toaster position="top-right" richColors closeButton />
       </body>
