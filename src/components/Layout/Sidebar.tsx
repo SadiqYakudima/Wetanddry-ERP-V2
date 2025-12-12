@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { signOut } from 'next-auth/react';
 
 import { Permission, hasPermission } from '@/lib/permissions';
-import NotificationBell from '@/components/notifications/NotificationBell';
 import PushNotificationPrompt from '@/components/notifications/PushNotificationPrompt';
 
 const modules: { id: string; name: string; icon: any; href: string; permission?: Permission }[] = [
@@ -73,15 +72,12 @@ export function Sidebar({ user }: { user?: SidebarUser }) {
                             <p className="text-xs text-blue-300">Enterprise Management</p>
                         </div>
                     )}
-                    <div className="flex items-center gap-1 ml-auto">
-                        <NotificationBell />
-                        <button
-                            onClick={() => setCollapsed(!collapsed)}
-                            className="p-2 hover:bg-blue-800 rounded"
-                        >
-                            <Menu size={20} />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="p-2 hover:bg-blue-800 rounded ml-auto"
+                    >
+                        <Menu size={20} />
+                    </button>
                 </div>
 
                 {/* Navigation Menu */}

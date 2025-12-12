@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Truck, Package, Fuel, FlaskConical, Users, Settings, Bell, Search, Menu, LogOut } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, Fuel, FlaskConical, Users, Settings, Search, Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface GlobalLayoutProps {
   children: React.ReactNode;
@@ -38,7 +39,7 @@ export default function GlobalLayout({ children, activeModule, onModuleChange }:
               <p className="text-xs text-blue-300">Enterprise Management</p>
             </div>
           )}
-          <button 
+          <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="p-2 hover:bg-blue-800 rounded"
           >
@@ -55,11 +56,10 @@ export default function GlobalLayout({ children, activeModule, onModuleChange }:
               <button
                 key={module.id}
                 onClick={() => onModuleChange(module.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
-                  isActive 
-                    ? 'bg-blue-800 border-l-4 border-yellow-400' 
-                    : 'hover:bg-blue-800/50'
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${isActive
+                  ? 'bg-blue-800 border-l-4 border-yellow-400'
+                  : 'hover:bg-blue-800/50'
+                  }`}
               >
                 <Icon size={20} />
                 {!sidebarCollapsed && <span className="text-sm font-medium">{module.name}</span>}
@@ -110,10 +110,7 @@ export default function GlobalLayout({ children, activeModule, onModuleChange }:
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-              <Bell size={20} className="text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationBell />
           </div>
         </header>
 

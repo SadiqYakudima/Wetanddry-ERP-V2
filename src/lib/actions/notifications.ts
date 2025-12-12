@@ -48,18 +48,18 @@ export interface CreateNotificationInput {
     entityId?: string;
 }
 
-// Notification type configuration
+// Notification type configuration - matches User's Notification Matrix
 const NOTIFICATION_CONFIG: Record<NotificationType, {
     defaultPriority: NotificationPriority;
     requiredPermissions?: Permission[]; // Who can receive this type
     targetRoles?: Role[]; // Alternative: specific roles
 }> = {
-    // Approval requests go to admins/managers
+    // Approval requests → Super Admin, Manager
     new_inventory_item: { defaultPriority: 'high', requiredPermissions: ['approve_inventory_items'] },
     stock_transaction_pending: { defaultPriority: 'high', requiredPermissions: ['approve_stock_transactions'] },
     material_request_pending: { defaultPriority: 'medium', requiredPermissions: ['approve_material_requests'] },
 
-    // Approval decisions go back to requester (handled specially)
+    // Approval decisions → Original Requester (handled specially via notifyRequester)
     item_approved: { defaultPriority: 'high' },
     item_rejected: { defaultPriority: 'high' },
     transaction_approved: { defaultPriority: 'high' },
@@ -67,28 +67,29 @@ const NOTIFICATION_CONFIG: Record<NotificationType, {
     request_approved: { defaultPriority: 'high' },
     request_rejected: { defaultPriority: 'high' },
 
-    // Inventory alerts
-    low_stock_alert: { defaultPriority: 'critical', requiredPermissions: ['view_inventory'] },
-    silo_level_critical: { defaultPriority: 'critical', requiredPermissions: ['view_inventory'] },
+    // Inventory Alerts → Super Admin, Manager, Storekeeper (all have view_inventory)
+    low_stock_alert: { defaultPriority: 'critical', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
+    silo_level_critical: { defaultPriority: 'critical', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
 
-    // Fleet alerts
+    // Fleet & Maintenance → Super Admin, Manager
     maintenance_due_date: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
     maintenance_due_mileage: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
     document_expiring: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
     spare_parts_low: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
 
-    // Exceptions
-    new_exception: { defaultPriority: 'high', requiredPermissions: ['manage_exceptions'] },
+    // Exceptions → new_exception to Super Admin, Manager; resolved to all with view_exceptions
+    new_exception: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
     exception_resolved: { defaultPriority: 'low', requiredPermissions: ['view_exceptions'] },
 
-    // Production
+    // Production → completed to Super Admin, Manager; shortage to SA, Manager, Storekeeper
     production_completed: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
-    material_shortage: { defaultPriority: 'high', requiredPermissions: ['view_inventory'] },
+    material_shortage: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
 
-    // System
+    // System/Admin → Super Admin only
     user_created: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN] },
     role_changed: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN] },
 };
+
 
 // ==================== CORE NOTIFICATION ACTIONS ====================
 
