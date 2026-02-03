@@ -8,6 +8,7 @@ export const authConfig = {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
             const isOnDashboard = nextUrl.pathname.startsWith('/dashboard') ||
+                nextUrl.pathname.startsWith('/orders') ||
                 nextUrl.pathname.startsWith('/trucks') ||
                 nextUrl.pathname.startsWith('/inventory') ||
                 nextUrl.pathname.startsWith('/production') ||
