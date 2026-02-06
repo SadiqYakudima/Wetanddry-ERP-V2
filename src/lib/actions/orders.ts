@@ -7,11 +7,11 @@ import { checkPermission } from '@/lib/permissions'
 
 // ==================== ORDER NUMBER GENERATION ====================
 
-// Generate a unique order number (ORD-YYYYMM-001, ORD-YYYYMM-002, etc.)
+// Generate a unique order number (SO-YYYY-00001, SO-YYYY-00002, etc.)
 async function generateOrderNumber(): Promise<string> {
     const now = new Date()
-    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
-    const prefix = `ORD-${yearMonth}-`
+    const year = now.getFullYear()
+    const prefix = `SO-${year}-`
 
     const lastOrder = await prisma.salesOrder.findFirst({
         where: {
@@ -26,7 +26,7 @@ async function generateOrderNumber(): Promise<string> {
         nextNumber = lastNum + 1
     }
 
-    return `${prefix}${String(nextNumber).padStart(3, '0')}`
+    return `${prefix}${String(nextNumber).padStart(5, '0')}`
 }
 
 // ==================== SALES ORDER CRUD ====================

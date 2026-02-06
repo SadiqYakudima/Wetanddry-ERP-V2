@@ -29,6 +29,7 @@ interface Client {
     paymentTerms: string
     creditLimit: number | null
     currentBalance: number
+    walletBalance: number
     category: string
     status: string
     notes: string | null
@@ -40,8 +41,8 @@ interface Client {
         email: string | null
     } | null
     stats: {
-        totalProductionRuns: number
-        totalProductionVolume: number
+        totalOrders: number
+        totalVolume: number
         totalExpenses: number
     }
 }
@@ -452,11 +453,11 @@ function ClientsTab({
                             {/* Stats Footer */}
                             <div className="p-4 bg-gray-50/50 grid grid-cols-3 gap-3">
                                 <div className="text-center">
-                                    <p className="text-lg font-bold text-gray-900">{client.stats.totalProductionRuns}</p>
+                                    <p className="text-lg font-bold text-gray-900">{client.stats.totalOrders}</p>
                                     <p className="text-xs text-gray-500">Orders</p>
                                 </div>
                                 <div className="text-center border-x border-gray-200">
-                                    <p className="text-lg font-bold text-gray-900">{client.stats.totalProductionVolume.toLocaleString()}</p>
+                                    <p className="text-lg font-bold text-gray-900">{client.stats.totalVolume.toFixed(1)}</p>
                                     <p className="text-xs text-gray-500">m³ Total</p>
                                 </div>
                                 <div className="text-center">
@@ -1339,6 +1340,156 @@ function ClientDetailModal({
     client: Client
     onClose: () => void
 }) {
+    const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'report'>('overview')
+    const [salesOrders, setSalesOrders] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+    const [reportDateFrom, setReportDateFrom] = useState('')
+    const [reportDateTo, setReportDateTo] = useState('')
+
+    // Fetch sales orders when tab changes to orders or report
+    useEffect(() => {
+        if (activeTab === 'orders' || activeTab === 'report') {
+            loadSalesOrders()
+        }
+    }, [activeTab])
+
+    const loadSalesOrders = async () => {
+        setLoading(true)
+        try {
+            const { getClientSalesOrders } = await import('@/lib/actions/crm')
+            const orders = await getClientSalesOrders(client.id)
+            setSalesOrders(orders)
+        } catch (error) {
+            console.error('Error loading sales orders:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Filter orders based on search and date
+    const filteredOrders = salesOrders.filter(order => {
+        const matchesSearch = !searchQuery ||
+            order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.lineItems?.some((item: any) => item.recipe?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+
+        const orderDate = new Date(order.orderDate)
+        const matchesDateFrom = !dateFrom || orderDate >= new Date(dateFrom)
+        const matchesDateTo = !dateTo || orderDate <= new Date(dateTo + 'T23:59:59')
+
+        return matchesSearch && matchesDateFrom && matchesDateTo
+    })
+
+    // Calculate totals for filtered orders
+    const totalVolume = filteredOrders.reduce((sum, order) =>
+        sum + order.lineItems.reduce((lineSum: number, item: any) => lineSum + (item.cubicMeters || 0), 0), 0
+    )
+    const totalAmount = filteredOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+    const totalPaid = filteredOrders.reduce((sum, order) => sum + (order.amountPaid || 0), 0)
+
+    // Report filtered orders
+    const reportFilteredOrders = salesOrders.filter(order => {
+        const orderDate = new Date(order.orderDate)
+        const matchesDateFrom = !reportDateFrom || orderDate >= new Date(reportDateFrom)
+        const matchesDateTo = !reportDateTo || orderDate <= new Date(reportDateTo + 'T23:59:59')
+        return matchesDateFrom && matchesDateTo
+    })
+
+    // Calculate report totals
+    const reportTotalOrders = reportFilteredOrders.length
+    const reportTotalVolume = reportFilteredOrders.reduce((sum, order) =>
+        sum + order.lineItems.reduce((lineSum: number, item: any) => lineSum + (item.cubicMeters || 0), 0), 0
+    )
+    const reportTotalPaid = reportFilteredOrders.reduce((sum, order) => sum + (order.amountPaid || 0), 0)
+
+    const handleDownloadPDF = () => {
+        // Create printable content
+        const printWindow = window.open('', '_blank')
+        if (!printWindow) return
+
+        const content = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Client Report - ${client.name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; }
+                    h1 { color: #7c3aed; }
+                    .header { margin-bottom: 30px; }
+                    .stats { display: flex; gap: 20px; margin: 20px 0; }
+                    .stat-card { background: #f3f4f6; padding: 15px 25px; border-radius: 8px; text-align: center; }
+                    .stat-value { font-size: 24px; font-weight: bold; color: #1f2937; }
+                    .stat-label { font-size: 12px; color: #6b7280; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+                    th { background: #f9fafb; font-weight: 600; }
+                    .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Client Production Report</h1>
+                    <p><strong>${client.code}</strong> - ${client.name}</p>
+                    <p>Report generated: ${new Date().toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    ${reportDateFrom || reportDateTo ? `<p>Date Range: ${reportDateFrom || 'Start'} to ${reportDateTo || 'Present'}</p>` : '<p>All orders included</p>'}
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value">${reportTotalOrders}</div>
+                        <div class="stat-label">Orders</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${reportTotalVolume.toFixed(1)}</div>
+                        <div class="stat-label">Total Volume (m³)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">₦${reportTotalPaid.toLocaleString()}</div>
+                        <div class="stat-label">Total Paid</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Products</th>
+                            <th>Volume (m³)</th>
+                            <th>Total (₦)</th>
+                            <th>Paid (₦)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reportFilteredOrders.map(order => `
+                            <tr>
+                                <td>${order.orderNumber}</td>
+                                <td>${new Date(order.orderDate).toLocaleDateString('en-NG')}</td>
+                                <td>${order.lineItems?.map((item: any) => item.recipe?.name || item.productType).join(', ') || '-'}</td>
+                                <td>${order.lineItems?.reduce((sum: number, item: any) => sum + (item.cubicMeters || 0), 0).toFixed(1)} m³</td>
+                                <td>₦${order.totalAmount?.toLocaleString() || 0}</td>
+                                <td>₦${order.amountPaid?.toLocaleString() || 0}</td>
+                                <td>${order.status}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <p>Generated by Wet N Dry ERP System</p>
+                </div>
+            </body>
+            </html>
+        `
+
+        printWindow.document.write(content)
+        printWindow.document.close()
+        printWindow.print()
+    }
+
     const statusColors: Record<string, string> = {
         Active: 'bg-emerald-100 text-emerald-700',
         Inactive: 'bg-gray-100 text-gray-600',
@@ -1353,19 +1504,25 @@ function ClientDetailModal({
         Dormant: 'bg-gray-100 text-gray-600'
     }
 
+    const tabs = [
+        { id: 'overview', label: 'Overview', icon: Building2 },
+        { id: 'orders', label: 'Sales Orders', icon: Factory },
+        { id: 'report', label: 'Generate Report', icon: FileText }
+    ] as const
+
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 bg-gradient-to-r from-violet-600 to-purple-600 text-white">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                            <Building2 className="w-8 h-8 text-white" />
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                            <Building2 className="w-7 h-7 text-white" />
                         </div>
                         <div>
                             <p className="text-violet-200 text-sm font-medium">{client.code}</p>
-                            <h2 className="text-2xl font-bold">{client.name}</h2>
-                            <div className="flex gap-2 mt-2">
+                            <h2 className="text-xl font-bold">{client.name}</h2>
+                            <div className="flex gap-2 mt-1.5">
                                 <span className={cn(
                                     "px-2 py-0.5 text-xs font-medium rounded-full",
                                     statusColors[client.status] || statusColors.Active
@@ -1389,139 +1546,281 @@ function ClientDetailModal({
                     </button>
                 </div>
 
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 px-6 bg-white">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+                                activeTab === tab.id
+                                    ? "border-violet-600 text-violet-600"
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            <tab.icon size={16} />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
-                    {/* Statistics */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-violet-50 rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-violet-700">{client.stats.totalProductionRuns}</p>
-                            <p className="text-sm text-violet-600">Total Orders</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-blue-700">{client.stats.totalProductionVolume.toLocaleString()}</p>
-                            <p className="text-sm text-blue-600">Volume (m³)</p>
-                        </div>
-                        <div className="bg-emerald-50 rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-emerald-700">₦{(client.stats.totalExpenses / 1000).toFixed(0)}k</p>
-                            <p className="text-sm text-emerald-600">Revenue</p>
-                        </div>
-                    </div>
-
-                    {/* Contact Information */}
-                    <div className="bg-gray-50 rounded-xl p-5">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <Phone size={16} />
-                            Contact Information
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs text-gray-500 mb-1">Phone</p>
-                                <p className="font-medium text-gray-900">{client.phone}</p>
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
+                    {/* Overview Tab */}
+                    {activeTab === 'overview' && (
+                        <div className="space-y-5">
+                            {/* Statistics */}
+                            <div className="grid grid-cols-4 gap-3">
+                                <div className="bg-violet-50 rounded-xl p-3.5 text-center">
+                                    <p className="text-xl font-bold text-violet-700">{client.stats.totalOrders}</p>
+                                    <p className="text-xs text-violet-600">Total Orders</p>
+                                </div>
+                                <div className="bg-blue-50 rounded-xl p-3.5 text-center">
+                                    <p className="text-xl font-bold text-blue-700">{client.stats.totalVolume.toFixed(1)}</p>
+                                    <p className="text-xs text-blue-600">Volume (m³)</p>
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-center">
+                                    <p className="text-xl font-bold text-emerald-700">₦{(client.walletBalance || 0).toLocaleString()}</p>
+                                    <p className="text-xs text-emerald-600">Wallet Balance</p>
+                                </div>
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 text-center">
+                                    <p className="text-xl font-bold text-red-600">₦{(client.stats.totalExpenses / 1000).toFixed(0)}k</p>
+                                    <p className="text-xs text-red-500">Expenses</p>
+                                </div>
                             </div>
-                            {client.altPhone && (
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Alt. Phone</p>
-                                    <p className="font-medium text-gray-900">{client.altPhone}</p>
-                                </div>
-                            )}
-                            {client.email && (
-                                <div className="col-span-2">
-                                    <p className="text-xs text-gray-500 mb-1">Email</p>
-                                    <p className="font-medium text-gray-900">{client.email}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Address */}
-                    <div className="bg-gray-50 rounded-xl p-5">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <MapPin size={16} />
-                            Address
-                        </h3>
-                        <p className="text-gray-900">{client.address}</p>
-                        <p className="text-gray-600">{client.city}, {client.state}</p>
-                    </div>
-
-                    {/* Primary Contact */}
-                    {client.primaryContact && (
-                        <div className="bg-gray-50 rounded-xl p-5">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                                <UserCircle size={16} />
-                                Primary Contact
-                            </h3>
+                            {/* Contact Info & Address */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Name</p>
-                                    <p className="font-medium text-gray-900">{client.primaryContact.name}</p>
-                                </div>
-                                {client.primaryContact.role && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Role</p>
-                                        <p className="font-medium text-gray-900">{client.primaryContact.role}</p>
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <Phone size={14} />
+                                        Contact Information
+                                    </h3>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Phone</p>
+                                            <p className="font-medium text-gray-900 text-sm">{client.phone}</p>
+                                        </div>
+                                        {client.email && (
+                                            <div>
+                                                <p className="text-xs text-gray-500">Email</p>
+                                                <p className="font-medium text-gray-900 text-sm">{client.email}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Phone</p>
-                                    <p className="font-medium text-gray-900">{client.primaryContact.phone}</p>
                                 </div>
-                                {client.primaryContact.email && (
+
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <MapPin size={14} />
+                                        Address
+                                    </h3>
                                     <div>
-                                        <p className="text-xs text-gray-500 mb-1">Email</p>
-                                        <p className="font-medium text-gray-900">{client.primaryContact.email}</p>
+                                        <p className="font-medium text-gray-900 text-sm">{client.address}</p>
+                                        <p className="text-gray-600 text-sm">{client.city}, {client.state}</p>
                                     </div>
-                                )}
+                                </div>
+                            </div>
+
+                            {/* Business Details */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                    <FileText size={14} />
+                                    Business Details
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-gray-500">Client Type</p>
+                                        <p className="font-medium text-gray-900 text-sm">{client.type}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Payment Terms</p>
+                                        <p className="font-medium text-gray-900 text-sm">{client.paymentTerms}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Member Since */}
+                            <div className="text-center text-sm text-gray-500 pt-2">
+                                <Calendar size={14} className="inline mr-1" />
+                                Member since {new Date(client.createdAt).toLocaleDateString('en-NG', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
                             </div>
                         </div>
                     )}
 
-                    {/* Business Details */}
-                    <div className="bg-gray-50 rounded-xl p-5">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <FileText size={16} />
-                            Business Details
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs text-gray-500 mb-1">Client Type</p>
-                                <p className="font-medium text-gray-900">{client.type}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 mb-1">Payment Terms</p>
-                                <p className="font-medium text-gray-900">{client.paymentTerms}</p>
-                            </div>
-                            {client.creditLimit && (
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Credit Limit</p>
-                                    <p className="font-medium text-gray-900">₦{client.creditLimit.toLocaleString()}</p>
+                    {/* Production Orders Tab */}
+                    {activeTab === 'orders' && (
+                        <div className="space-y-4">
+                            {/* Search & Filters */}
+                            <div className="flex gap-3 items-center">
+                                <div className="flex-1 relative">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search orders..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                    />
                                 </div>
-                            )}
-                            {client.taxId && (
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Tax ID</p>
-                                    <p className="font-medium text-gray-900">{client.taxId}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                />
+                                <span className="text-gray-400 text-sm">to</span>
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                />
+                            </div>
 
-                    {/* Notes */}
-                    {client.notes && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                            <h3 className="text-sm font-semibold text-amber-700 mb-2">Notes</h3>
-                            <p className="text-gray-700">{client.notes}</p>
+                            {/* Summary */}
+                            <p className="text-sm text-gray-500">
+                                Showing <span className="font-medium text-gray-700">{filteredOrders.length}</span> orders &nbsp;
+                                Volume: <span className="font-medium text-violet-600">{totalVolume.toFixed(1)} m³</span> &nbsp;
+                                Paid: <span className="font-medium text-emerald-600">₦{totalPaid.toLocaleString()}</span>
+                            </p>
+
+                            {/* Orders Table */}
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+                                </div>
+                            ) : filteredOrders.length > 0 ? (
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Order #</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Date</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Products</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Volume</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Total</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Paid</th>
+                                                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {filteredOrders.map((order) => {
+                                                const orderVolume = order.lineItems?.reduce((sum: number, item: any) => sum + (item.cubicMeters || 0), 0) || 0
+                                                const products = order.lineItems?.map((item: any) => item.recipe?.name || item.productType).join(', ') || '-'
+                                                return (
+                                                    <tr key={order.id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-2.5 text-violet-600 font-medium">{order.orderNumber}</td>
+                                                        <td className="px-4 py-2.5 text-gray-900">
+                                                            {new Date(order.orderDate).toLocaleDateString('en-NG', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </td>
+                                                        <td className="px-4 py-2.5">
+                                                            <span className="font-medium text-gray-900">{products}</span>
+                                                        </td>
+                                                        <td className="px-4 py-2.5 text-gray-900">{orderVolume.toFixed(1)} m³</td>
+                                                        <td className="px-4 py-2.5 text-gray-900">₦{order.totalAmount?.toLocaleString() || 0}</td>
+                                                        <td className="px-4 py-2.5 text-emerald-600 font-medium">₦{order.amountPaid?.toLocaleString() || 0}</td>
+                                                        <td className="px-4 py-2.5">
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 text-xs font-medium rounded-full",
+                                                                order.status === 'Active' || order.status === 'Fulfilled' ? "bg-emerald-100 text-emerald-700" :
+                                                                    order.status === 'Draft' ? "bg-gray-100 text-gray-600" :
+                                                                        order.status === 'Pending' ? "bg-amber-100 text-amber-700" :
+                                                                            "bg-blue-100 text-blue-700"
+                                                            )}>
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Factory className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                    <p>No sales orders found</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* Member Since */}
-                    <div className="text-center text-sm text-gray-500">
-                        <Calendar size={14} className="inline mr-1" />
-                        Member since {new Date(client.createdAt).toLocaleDateString('en-NG', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })}
-                    </div>
+                    {/* Generate Report Tab */}
+                    {activeTab === 'report' && (
+                        <div className="space-y-5">
+                            <div className="bg-violet-50 rounded-xl p-5">
+                                <h3 className="font-semibold text-gray-900 mb-1">Generate PDF Report</h3>
+                                <p className="text-sm text-gray-600">
+                                    Generate a comprehensive PDF report for this client including all production orders within the selected date range.
+                                </p>
+                            </div>
+
+                            {/* Date Range Selection */}
+                            <div className="bg-gray-50 rounded-xl p-5">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-4">Select Date Range</h4>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">From</label>
+                                        <input
+                                            type="date"
+                                            value={reportDateFrom}
+                                            onChange={(e) => setReportDateFrom(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">To</label>
+                                        <input
+                                            type="date"
+                                            value={reportDateTo}
+                                            onChange={(e) => setReportDateTo(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-2">Leave empty to include all orders</p>
+                            </div>
+
+                            {/* Report Preview */}
+                            <div className="border border-gray-200 rounded-xl p-5">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-4">Report Preview</h4>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                                        <p className="text-2xl font-bold text-violet-600">{reportTotalOrders}</p>
+                                        <p className="text-xs text-gray-500">Orders</p>
+                                    </div>
+                                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                                        <p className="text-2xl font-bold text-violet-600">{reportTotalVolume.toFixed(1)}</p>
+                                        <p className="text-xs text-gray-500">Total Volume (m³)</p>
+                                    </div>
+                                    <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                                        <p className="text-2xl font-bold text-emerald-600">₦{reportTotalPaid.toLocaleString()}</p>
+                                        <p className="text-xs text-gray-500">Total Paid</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Download Button */}
+                            <button
+                                onClick={handleDownloadPDF}
+                                disabled={loading}
+                                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2"
+                            >
+                                <FileText size={18} />
+                                Download PDF Report
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}

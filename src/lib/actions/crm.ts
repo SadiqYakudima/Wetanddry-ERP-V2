@@ -77,7 +77,7 @@ export async function getClients(filters?: {
                 },
                 _count: {
                     select: {
-                        productionRuns: true,
+                        orders: true,
                         expenses: true,
                         exceptionLogs: true
                     }
@@ -86,14 +86,23 @@ export async function getClients(filters?: {
             orderBy: { createdAt: 'desc' }
         })
 
-        // Calculate total production volume per client
+        // Calculate total volume and stats per client from SalesOrders
         const clientsWithStats = await Promise.all(
             clients.map(async (client) => {
-                const productionStats = await prisma.productionRun.aggregate({
+                // Get sales orders with line items to calculate total volume
+                const orders = await prisma.salesOrder.findMany({
                     where: { clientId: client.id },
-                    _sum: { quantity: true },
-                    _count: true
+                    include: {
+                        lineItems: {
+                            select: { cubicMeters: true }
+                        }
+                    }
                 })
+
+                // Calculate total volume from all order line items
+                const totalVolume = orders.reduce((sum, order) =>
+                    sum + order.lineItems.reduce((lineSum, item) => lineSum + (item.cubicMeters || 0), 0), 0
+                )
 
                 const expenseStats = await prisma.expense.aggregate({
                     where: { clientId: client.id, status: 'Approved' },
@@ -104,8 +113,8 @@ export async function getClients(filters?: {
                     ...client,
                     primaryContact: client.contacts[0] || null,
                     stats: {
-                        totalProductionRuns: productionStats._count,
-                        totalProductionVolume: productionStats._sum.quantity || 0,
+                        totalOrders: orders.length,
+                        totalVolume: totalVolume,
                         totalExpenses: expenseStats._sum.amount || 0
                     }
                 }
@@ -657,6 +666,31 @@ export async function getClientProductionHistory(clientId: string) {
         orderBy: { createdAt: 'desc' }
     })
 }
+
+/**
+ * Get client sales orders with line items and payments
+ */
+export async function getClientSalesOrders(clientId: string) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'view_crm')
+
+    return await prisma.salesOrder.findMany({
+        where: { clientId },
+        include: {
+            lineItems: {
+                include: {
+                    recipe: true
+                }
+            },
+            payments: {
+                orderBy: { paymentDate: 'desc' }
+            }
+        },
+        orderBy: { orderDate: 'desc' }
+    })
+}
+
 
 /**
  * Get top clients by production volume

@@ -10,19 +10,52 @@ import { signOut } from 'next-auth/react';
 import { Permission, hasPermission } from '@/lib/permissions';
 import PushNotificationPrompt from '@/components/notifications/PushNotificationPrompt';
 
-const modules: { id: string; name: string; icon: any; href: string; permission?: Permission }[] = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { id: 'crm', name: 'Customer Relations', icon: Building2, href: '/crm', permission: 'view_crm' },
-    { id: 'orders', name: 'Sales Orders', icon: ShoppingCart, href: '/orders', permission: 'view_orders' },
-    { id: 'trucks', name: 'Truck & Asset Management', icon: Truck, href: '/trucks', permission: 'view_fleet' },
-    { id: 'inventory', name: 'Inventory Management', icon: Package, href: '/inventory', permission: 'view_inventory' },
-    { id: 'fuel', name: 'Diesel Management', icon: Fuel, href: '/fuel', permission: 'view_fuel_logs' },
-    { id: 'production', name: 'Mixology (Recipes)', icon: FlaskConical, href: '/production', permission: 'view_recipes' },
-    { id: 'finance', name: 'Finance & Reports', icon: Wallet, href: '/finance', permission: 'view_financials' },
-    { id: 'exceptions', name: 'Exception Handling', icon: AlertTriangle, href: '/exceptions', permission: 'view_exceptions' },
-    { id: 'staff', name: 'Staff Registry', icon: Users, href: '/staff', permission: 'view_staff' },
-    { id: 'users', name: 'User Management', icon: Users, href: '/users', permission: 'manage_users' },
-    // { id: 'settings', name: 'Settings', icon: Settings, href: '/settings', permission: 'manage_system_settings' },
+// Define menu categories with their items
+interface MenuItem {
+    id: string;
+    name: string;
+    icon: any;
+    href: string;
+    permission?: Permission;
+}
+
+interface MenuCategory {
+    name: string;
+    items: MenuItem[];
+}
+
+const menuCategories: MenuCategory[] = [
+    {
+        name: 'OVERVIEW',
+        items: [
+            { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+        ]
+    },
+    {
+        name: 'OPERATIONS',
+        items: [
+            { id: 'crm', name: 'Customers', icon: Building2, href: '/crm', permission: 'view_crm' },
+            { id: 'orders', name: 'Orders', icon: ShoppingCart, href: '/orders', permission: 'view_orders' },
+            { id: 'trucks', name: 'Fleet', icon: Truck, href: '/trucks', permission: 'view_fleet' },
+            { id: 'inventory', name: 'Inventory', icon: Package, href: '/inventory', permission: 'view_inventory' },
+            { id: 'fuel', name: 'Fuel', icon: Fuel, href: '/fuel', permission: 'view_fuel_logs' },
+            { id: 'production', name: 'Production', icon: FlaskConical, href: '/production', permission: 'view_recipes' },
+        ]
+    },
+    {
+        name: 'FINANCE',
+        items: [
+            { id: 'finance', name: 'Reports', icon: Wallet, href: '/finance', permission: 'view_financials' },
+            { id: 'exceptions', name: 'Exceptions', icon: AlertTriangle, href: '/exceptions', permission: 'view_exceptions' },
+        ]
+    },
+    {
+        name: 'ADMINISTRATION',
+        items: [
+            { id: 'staff', name: 'Staff', icon: Users, href: '/staff', permission: 'view_staff' },
+            { id: 'users', name: 'Users', icon: Users, href: '/users', permission: 'manage_users' },
+        ]
+    },
 ];
 
 interface SidebarUser {
@@ -83,30 +116,52 @@ export function Sidebar({ user }: { user?: SidebarUser }) {
                 </div>
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-blue-800">
-                    {modules.map((module) => {
-                        // Filter based on permission using server-side role
-                        if (module.permission && !can(module.permission)) {
-                            return null;
-                        }
+                <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-blue-800">
+                    {menuCategories.map((category) => {
+                        // Filter items based on permissions
+                        const visibleItems = category.items.filter(
+                            (item) => !item.permission || can(item.permission)
+                        );
 
-                        const Icon = module.icon;
-                        const isActive = (pathname || '').startsWith(module.href);
+                        // Don't render category if no visible items
+                        if (visibleItems.length === 0) return null;
+
                         return (
-                            <Link
-                                key={module.id}
-                                href={module.href}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-4 py-3 transition-colors",
-                                    isActive
-                                        ? "bg-blue-800 border-l-4 border-yellow-400"
-                                        : "hover:bg-blue-800/50 border-l-4 border-transparent"
+                            <div key={category.name} className="mb-2">
+                                {/* Category Header */}
+                                {!collapsed && (
+                                    <div className="px-4 py-2 text-[10px] font-semibold text-blue-400 uppercase tracking-wider">
+                                        {category.name}
+                                    </div>
                                 )}
-                                title={collapsed ? module.name : undefined}
-                            >
-                                <Icon size={20} className="shrink-0" />
-                                {!collapsed && <span className="text-sm font-medium whitespace-nowrap">{module.name}</span>}
-                            </Link>
+                                {collapsed && <div className="border-t border-blue-800 mx-3 my-2" />}
+
+                                {/* Category Items */}
+                                {visibleItems.map((item) => {
+                                    const Icon = item.icon;
+                                    const isActive = (pathname || '').startsWith(item.href);
+                                    return (
+                                        <Link
+                                            key={item.id}
+                                            href={item.href}
+                                            className={cn(
+                                                "w-full flex items-center gap-3 px-4 py-2.5 transition-colors",
+                                                isActive
+                                                    ? "bg-blue-800 border-l-4 border-yellow-400"
+                                                    : "hover:bg-blue-800/50 border-l-4 border-transparent"
+                                            )}
+                                            title={collapsed ? item.name : undefined}
+                                        >
+                                            <Icon size={20} className="shrink-0" />
+                                            {!collapsed && (
+                                                <span className="text-sm font-medium whitespace-nowrap">
+                                                    {item.name}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         );
                     })}
                 </nav>

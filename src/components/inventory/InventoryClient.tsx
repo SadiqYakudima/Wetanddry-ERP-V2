@@ -7,7 +7,8 @@ import {
     Package, AlertTriangle, ArrowUpRight, ArrowDownRight, Database, Search, Filter,
     Plus, ChevronDown, Clock, CheckCircle2, XCircle, Warehouse, FlaskConical,
     Calendar, DollarSign, Layers, Settings, Eye, Edit, Trash2, X, Loader2,
-    AlertCircle, TrendingUp, TrendingDown, BarChart3, History, Info, Save, Activity
+    AlertCircle, TrendingUp, TrendingDown, BarChart3, History, Info, Save, Activity,
+    Container
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ActivityTab, { PendingApproval, StockTransaction } from './ActivityTab';
@@ -99,15 +100,18 @@ export default function InventoryClient({
     currentUser,
     userRole
 }: InventoryClientProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'silos' | 'activity' | 'expiring'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'silos' | 'containers' | 'activity' | 'expiring'>('overview');
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [showStockModal, setShowStockModal] = useState(false);
     const [showItemModal, setShowItemModal] = useState(false);
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [showSiloModal, setShowSiloModal] = useState(false);
+    const [showContainerModal, setShowContainerModal] = useState(false);
     const [showLoadCementModal, setShowLoadCementModal] = useState(false);
     const [selectedSilo, setSelectedSilo] = useState<SiloStat | null>(null);
+    const [containerStats, setContainerStats] = useState<SiloStat[]>([]);
+    const [containerLoading, setContainerLoading] = useState(false);
     const [modalType, setModalType] = useState<'in' | 'out'>('in');
     const [showViewItemModal, setShowViewItemModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -244,6 +248,7 @@ export default function InventoryClient({
                         { id: 'overview', label: 'Overview', icon: <BarChart3 size={18} /> },
                         { id: 'items', label: 'All Items', icon: <Package size={18} /> },
                         { id: 'silos', label: 'Silo Management', icon: <Database size={18} /> },
+                        { id: 'containers', label: 'Container Storage', icon: <Container size={18} /> },
                         { id: 'activity', label: `Activity ${pendingCounts.total > 0 ? `(${pendingCounts.total})` : ''}`, icon: <Activity size={18} /> },
                         { id: 'expiring', label: 'Expiring Items', icon: <AlertCircle size={18} /> }
                     ].map(tab => (
@@ -299,8 +304,9 @@ export default function InventoryClient({
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="p-2 bg-white rounded-lg shadow-sm">
                                             {loc.type === 'Silo' ? <Database size={20} className="text-blue-600" /> :
-                                                loc.type === 'Warehouse' ? <Warehouse size={20} className="text-amber-600" /> :
-                                                    <FlaskConical size={20} className="text-purple-600" />}
+                                                loc.type === 'Container' ? <Container size={20} className="text-teal-600" /> :
+                                                    loc.type === 'Warehouse' ? <Warehouse size={20} className="text-amber-600" /> :
+                                                        <FlaskConical size={20} className="text-purple-600" />}
                                         </div>
                                     </div>
                                     <h4 className="font-semibold text-gray-900">{loc.name}</h4>
@@ -373,7 +379,8 @@ export default function InventoryClient({
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 {item.location.type === 'Silo' ? <Database size={14} className="text-blue-500" /> :
-                                                    <Warehouse size={14} className="text-amber-500" />}
+                                                    item.location.type === 'Container' ? <Container size={14} className="text-teal-500" /> :
+                                                        <Warehouse size={14} className="text-amber-500" />}
                                                 <span className="text-sm text-gray-600">{item.location.name}</span>
                                             </div>
                                         </td>
@@ -585,6 +592,159 @@ export default function InventoryClient({
                             Silos are specifically designed for cement storage and are used during production runs.
                         </div>
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'containers' && (
+                <div className="space-y-6">
+                    {/* Container Management Header */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Container Storage Management</h3>
+                            <p className="text-sm text-gray-500 mt-1">Manage cement containers and container inventory</p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                setContainerLoading(true);
+                                try {
+                                    const { getContainersWithCement } = await import('@/lib/actions/inventory');
+                                    const containers = await getContainersWithCement();
+                                    setContainerStats(containers.map(c => ({
+                                        id: c.id,
+                                        name: c.name,
+                                        itemName: c.cementItem?.name || 'Empty',
+                                        currentLevel: c.cementItem?.quantity || 0,
+                                        maxCapacity: c.cementItem?.maxCapacity || c.capacity || 30000,
+                                        percentage: c.percentage,
+                                        unit: c.cementItem?.unit || 'kg',
+                                        status: c.status
+                                    })));
+                                } catch (error) {
+                                    console.error('Failed to load containers:', error);
+                                }
+                                setContainerLoading(false);
+                            }}
+                            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium shadow-sm flex items-center gap-2 transition-all mr-2"
+                        >
+                            <History size={18} className={containerLoading ? 'animate-spin' : ''} />
+                            Refresh
+                        </button>
+                    </div>
+
+                    {/* Container Info Banner */}
+                    <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-start gap-3">
+                        <Container className="text-teal-600 mt-0.5 flex-shrink-0" size={20} />
+                        <div className="text-sm text-teal-800">
+                            <span className="font-semibold">Multi-Unit Tracking:</span> Containers provide flexible cement storage tracking alongside silos.
+                            Use the refresh button above to load container data, or create containers via the inventory settings.
+                        </div>
+                    </div>
+
+                    {/* Container Grid */}
+                    {containerStats.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                            <Container size={48} className="mx-auto text-gray-300 mb-4" />
+                            <h4 className="text-lg font-medium text-gray-600">No Containers Found</h4>
+                            <p className="text-sm text-gray-400 mt-1">Click Refresh to load containers, or create new container storage locations</p>
+                            <button
+                                onClick={async () => {
+                                    setContainerLoading(true);
+                                    try {
+                                        const { getContainersWithCement } = await import('@/lib/actions/inventory');
+                                        const containers = await getContainersWithCement();
+                                        setContainerStats(containers.map(c => ({
+                                            id: c.id,
+                                            name: c.name,
+                                            itemName: c.cementItem?.name || 'Empty',
+                                            currentLevel: c.cementItem?.quantity || 0,
+                                            maxCapacity: c.cementItem?.maxCapacity || c.capacity || 30000,
+                                            percentage: c.percentage,
+                                            unit: c.cementItem?.unit || 'kg',
+                                            status: c.status
+                                        })));
+                                    } catch (error) {
+                                        console.error('Failed to load containers:', error);
+                                    }
+                                    setContainerLoading(false);
+                                }}
+                                className="mt-4 px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-medium hover:bg-teal-200 transition-colors"
+                            >
+                                Load Containers
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {containerStats.map(container => (
+                                <div key={container.id} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <Container size={18} className="text-teal-600" />
+                                                <h4 className="text-lg font-bold text-gray-900">{container.name}</h4>
+                                            </div>
+                                            <p className="text-sm text-gray-500">{container.itemName || 'No cement loaded'}</p>
+                                        </div>
+                                        <span className={cn(
+                                            "px-2.5 py-1 text-xs font-semibold rounded-full",
+                                            container.status === 'Low' ? "bg-red-100 text-red-800" :
+                                                container.status === 'High' ? "bg-amber-100 text-amber-800" :
+                                                    container.status === 'Optimal' ? "bg-emerald-100 text-emerald-800" :
+                                                        "bg-gray-100 text-gray-800"
+                                        )}>
+                                            {container.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Container Level Visualization */}
+                                    <div className="relative h-28 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 mb-4">
+                                        <div
+                                            className={cn(
+                                                "absolute bottom-0 left-0 w-full transition-all duration-700 ease-in-out",
+                                                container.status === 'Low' ? "bg-gradient-to-t from-red-500 to-red-400" :
+                                                    container.status === 'High' ? "bg-gradient-to-t from-amber-500 to-amber-400" :
+                                                        "bg-gradient-to-t from-teal-600 to-teal-400"
+                                            )}
+                                            style={{ height: `${Math.min(container.percentage, 100)}%` }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xl font-bold text-gray-700 bg-white/80 px-3 py-1 rounded-lg shadow">
+                                                {container.percentage.toFixed(0)}%
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm mb-4">
+                                        <div>
+                                            <span className="text-gray-500">Current Level</span>
+                                            <div className="font-bold text-gray-900">
+                                                {container.currentLevel.toLocaleString()} {container.unit}
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-gray-500">Capacity</span>
+                                            <div className="font-bold text-gray-700">
+                                                {container.maxCapacity.toLocaleString()} {container.unit}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSilo(container);
+                                                setShowLoadCementModal(true);
+                                            }}
+                                            className="flex-1 py-2 px-3 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            <ArrowDownRight size={16} />
+                                            Load Cement
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1833,7 +1993,7 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
     onClose: () => void;
     userRole?: string;
 }) {
-    const [activeTabModal, setActiveTabModal] = useState<'details' | 'edit' | 'history'>('details');
+    const [activeTabModal, setActiveTabModal] = useState<'details' | 'edit' | 'history' | 'pricing'>('details');
     const [isPending, startTransition] = useTransition();
     const [isEditing, setIsEditing] = useState(false);
 
@@ -1900,7 +2060,8 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                         {[
                             { id: 'details', label: 'Details', icon: <Info size={16} /> },
                             { id: 'edit', label: 'Edit', icon: <Edit size={16} /> },
-                            { id: 'history', label: 'Transaction History', icon: <History size={16} /> }
+                            { id: 'history', label: 'Transaction History', icon: <History size={16} /> },
+                            { id: 'pricing', label: 'Price History', icon: <DollarSign size={16} /> }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -2157,6 +2318,10 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                     {activeTabModal === 'history' && (
                         <TransactionHistory itemId={item.id} userRole={userRole} />
                     )}
+
+                    {activeTabModal === 'pricing' && (
+                        <PriceHistory itemId={item.id} currentPrice={item.unitCost} unit={item.unit} />
+                    )}
                 </div>
             </div>
         </div>
@@ -2341,6 +2506,247 @@ function TransactionHistory({ itemId, userRole }: { itemId: string; userRole?: s
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+// ==================== PRICE HISTORY COMPONENT ====================
+
+function PriceHistory({ itemId, currentPrice, unit }: { itemId: string; currentPrice: number; unit: string }) {
+    const [priceData, setPriceData] = useState<any>(null);
+    const [wacData, setWacData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [wacLoading, setWacLoading] = useState(false);
+    const [applyingWac, setApplyingWac] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
+    useEffect(() => {
+        loadPriceHistory();
+    }, [itemId]);
+
+    const loadPriceHistory = async () => {
+        setLoading(true);
+        try {
+            const { getItemPriceHistory, calculateWAC } = await import('@/lib/actions/inventory');
+            const [history, wac] = await Promise.all([
+                getItemPriceHistory(itemId, 30),
+                calculateWAC(itemId)
+            ]);
+            setPriceData(history);
+            setWacData(wac);
+        } catch (error) {
+            console.error('Failed to load price history:', error);
+        }
+        setLoading(false);
+    };
+
+    const handleApplyWAC = async () => {
+        if (!confirm('Apply the calculated Weighted Average Cost as the new unit price? This will update the item\'s unit cost.')) {
+            return;
+        }
+        setApplyingWac(true);
+        try {
+            const { applyWACAsUnitCost } = await import('@/lib/actions/inventory');
+            await applyWACAsUnitCost(itemId);
+            await loadPriceHistory(); // Refresh data
+        } catch (error: any) {
+            alert(error.message || 'Failed to apply WAC');
+        }
+        setApplyingWac(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 size={32} className="animate-spin text-indigo-500" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Current Price & WAC Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200">
+                    <div className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Current Unit Cost</div>
+                    <div className="text-2xl font-bold text-blue-900">
+                        ₦{currentPrice.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1">per {unit}</div>
+                </div>
+
+                {wacData && (
+                    <>
+                        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-5 rounded-xl border border-emerald-200">
+                            <div className="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Weighted Average Cost</div>
+                            <div className="text-2xl font-bold text-emerald-900">
+                                ₦{wacData.wac?.toLocaleString('en-NG', { minimumFractionDigits: 2 }) || 'N/A'}
+                            </div>
+                            <div className="text-xs text-emerald-600 mt-1">
+                                From {wacData.transactionCount || 0} transactions
+                            </div>
+                        </div>
+
+                        <div className={cn(
+                            "p-5 rounded-xl border",
+                            wacData.difference > 0
+                                ? "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200"
+                                : wacData.difference < 0
+                                    ? "bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+                                    : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200"
+                        )}>
+                            <div className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1">WAC vs Current</div>
+                            <div className="flex items-center gap-2">
+                                {wacData.difference !== 0 && (
+                                    wacData.difference > 0 ? (
+                                        <TrendingUp size={20} className="text-amber-600" />
+                                    ) : (
+                                        <TrendingDown size={20} className="text-green-600" />
+                                    )
+                                )}
+                                <span className={cn(
+                                    "text-2xl font-bold",
+                                    wacData.difference > 0 ? "text-amber-700" :
+                                        wacData.difference < 0 ? "text-green-700" : "text-gray-700"
+                                )}>
+                                    {wacData.differencePercent > 0 ? '+' : ''}
+                                    {wacData.differencePercent?.toFixed(1) || 0}%
+                                </span>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">
+                                {wacData.difference > 0 ? 'WAC higher than current' :
+                                    wacData.difference < 0 ? 'WAC lower than current' : 'Match'}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Apply WAC Button */}
+            {wacData && wacData.difference !== 0 && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleApplyWAC}
+                        disabled={applyingWac}
+                        className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/25"
+                    >
+                        {applyingWac ? (
+                            <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                            <DollarSign size={18} />
+                        )}
+                        {applyingWac ? 'Applying...' : 'Apply WAC as Unit Cost'}
+                    </button>
+                </div>
+            )}
+
+            {/* Price Metrics */}
+            {priceData?.metrics && (
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <BarChart3 size={16} />
+                        Price Change Metrics
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">Previous Price</div>
+                            <div className="font-semibold text-gray-900">
+                                ₦{priceData.metrics.previousPrice?.toLocaleString('en-NG', { minimumFractionDigits: 2 }) || 'N/A'}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">Change from Previous</div>
+                            <div className={cn(
+                                "font-semibold",
+                                priceData.metrics.changeFromPrevious > 0 ? "text-red-600" :
+                                    priceData.metrics.changeFromPrevious < 0 ? "text-green-600" : "text-gray-900"
+                            )}>
+                                {priceData.metrics.changePercentFromPrevious > 0 ? '+' : ''}
+                                {priceData.metrics.changePercentFromPrevious?.toFixed(1) || 0}%
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">Oldest Recorded</div>
+                            <div className="font-semibold text-gray-900">
+                                ₦{priceData.metrics.oldestPrice?.toLocaleString('en-NG', { minimumFractionDigits: 2 }) || 'N/A'}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">Change from Oldest</div>
+                            <div className={cn(
+                                "font-semibold",
+                                priceData.metrics.changeFromOldest > 0 ? "text-red-600" :
+                                    priceData.metrics.changeFromOldest < 0 ? "text-green-600" : "text-gray-900"
+                            )}>
+                                {priceData.metrics.changePercentFromOldest > 0 ? '+' : ''}
+                                {priceData.metrics.changePercentFromOldest?.toFixed(1) || 0}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Price History Timeline */}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                    <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <History size={16} />
+                        Historical Prices
+                    </h4>
+                    <button
+                        onClick={loadPriceHistory}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        Refresh
+                    </button>
+                </div>
+
+                {priceData?.history && priceData.history.length > 0 ? (
+                    <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                        {priceData.history.map((record: any, idx: number) => (
+                            <div key={record.id || idx} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                        <DollarSign size={16} className="text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-semibold text-gray-900">
+                                            ₦{record.price.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {record.source || 'Manual Entry'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-500">
+                                        {new Date(record.effectiveDate).toLocaleDateString()}
+                                    </div>
+                                    {record.recordedBy && (
+                                        <div className="text-xs text-gray-400">
+                                            by {record.recordedBy}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 text-center text-gray-500">
+                        <History size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-sm">No price history recorded yet</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Info Note */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="text-blue-600 mt-0.5 flex-shrink-0" size={18} />
+                <div className="text-sm text-blue-800">
+                    <span className="font-semibold">Price Fluctuation Tracking:</span> Price history is automatically recorded when stock deliveries
+                    are received with different unit costs. Use the Weighted Average Cost (WAC) to maintain accurate costing across price changes.
+                </div>
+            </div>
         </div>
     );
 }

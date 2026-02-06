@@ -368,7 +368,79 @@ export async function markScheduleItemPaid(scheduleItemId: string, paymentId?: s
     return { success: true }
 }
 
-// Get overdue payments
+// Add a single payment schedule item
+export async function addPaymentScheduleItem(formData: FormData) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'manage_clients')
+
+    const orderId = formData.get('orderId') as string
+    const dueDate = formData.get('dueDate') as string
+    const amount = parseFloat(formData.get('amount') as string)
+    const description = formData.get('description') as string | null
+
+    if (!orderId) throw new Error('Order is required')
+    if (!dueDate) throw new Error('Due date is required')
+    if (isNaN(amount) || amount <= 0) throw new Error('Valid amount required')
+
+    const order = await prisma.salesOrder.findUnique({ where: { id: orderId } })
+    if (!order) throw new Error('Order not found')
+
+    const item = await prisma.paymentScheduleItem.create({
+        data: {
+            orderId,
+            dueDate: new Date(dueDate),
+            amount,
+            description: description || null,
+            status: 'Pending'
+        }
+    })
+
+    revalidatePath(`/orders/${orderId}`)
+    revalidatePath('/orders')
+    return { success: true, item }
+}
+
+// Remove a payment schedule item
+export async function removePaymentScheduleItem(itemId: string) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'manage_clients')
+
+    const item = await prisma.paymentScheduleItem.findUnique({ where: { id: itemId } })
+    if (!item) throw new Error('Schedule item not found')
+
+    // Only allow removing pending items
+    if (item.status === 'Paid') {
+        throw new Error('Cannot remove paid schedule items')
+    }
+
+    await prisma.paymentScheduleItem.delete({ where: { id: itemId } })
+
+    revalidatePath(`/orders/${item.orderId}`)
+    revalidatePath('/orders')
+    return { success: true }
+}
+
+// Get payment schedule for an order
+export async function getOrderPaymentSchedule(orderId: string) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+
+    const scheduleItems = await prisma.paymentScheduleItem.findMany({
+        where: { orderId },
+        orderBy: { dueDate: 'asc' }
+    })
+
+    const total = scheduleItems.reduce((sum, item) => sum + item.amount, 0)
+
+    return {
+        items: scheduleItems,
+        total,
+        count: scheduleItems.length
+    }
+}
+
 export async function getOverduePayments() {
     const session = await auth()
     if (!session?.user?.role) throw new Error('Unauthorized')

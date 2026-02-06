@@ -867,6 +867,240 @@ export async function createStorageLocation(formData: FormData) {
     return { success: true, location }
 }
 
+// ==================== CONTAINER MANAGEMENT ====================
+
+// Get all containers with their cement items
+export async function getContainersWithCement() {
+    const containers = await prisma.storageLocation.findMany({
+        where: { type: 'Container' },
+        include: {
+            items: {
+                where: { itemType: 'Cement' }
+            }
+        },
+        orderBy: { name: 'asc' }
+    })
+
+    return containers.map(container => {
+        const cementItem = container.items[0]
+        const percentage = cementItem?.maxCapacity
+            ? (cementItem.quantity / cementItem.maxCapacity) * 100
+            : 0
+
+        return {
+            id: container.id,
+            name: container.name,
+            description: container.description,
+            capacity: container.capacity,
+            isActive: container.isActive,
+            createdAt: container.createdAt,
+            cementItem: cementItem ? {
+                id: cementItem.id,
+                name: cementItem.name,
+                quantity: cementItem.quantity,
+                maxCapacity: cementItem.maxCapacity,
+                unit: cementItem.unit,
+                minThreshold: cementItem.minThreshold,
+                supplier: cementItem.supplier
+            } : null,
+            percentage,
+            status: !cementItem
+                ? 'Empty'
+                : percentage < 20
+                    ? 'Low'
+                    : percentage > 90
+                        ? 'High'
+                        : 'Optimal'
+        }
+    })
+}
+
+// Add cement to a container (creates or updates cement item)
+export async function addCementToContainer(formData: FormData) {
+    const containerId = formData.get('containerId') as string
+    const cementName = formData.get('cementName') as string
+    const quantity = parseFloat(formData.get('quantity') as string)
+    const maxCapacity = parseFloat(formData.get('maxCapacity') as string) || 30000 // 30 tons default for containers
+    const minThreshold = parseFloat(formData.get('minThreshold') as string) || 5000
+    const unitCost = parseFloat(formData.get('unitCost') as string) || 0.15
+    const supplier = formData.get('supplier') as string
+    const atcNumber = formData.get('atcNumber') as string
+
+    if (!containerId || !cementName || isNaN(quantity)) {
+        throw new Error('Container, cement name, and quantity are required')
+    }
+
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'create_stock_transactions')
+
+    const container = await prisma.storageLocation.findUnique({
+        where: { id: containerId },
+        include: { items: { where: { itemType: 'Cement' } } }
+    })
+
+    if (!container || container.type !== 'Container') {
+        throw new Error('Invalid container selected')
+    }
+
+    const existingCement = container.items[0]
+
+    if (existingCement) {
+        await prisma.$transaction(async (tx) => {
+            await tx.inventoryItem.update({
+                where: { id: existingCement.id },
+                data: {
+                    quantity: { increment: quantity },
+                    totalValue: (existingCement.quantity + quantity) * existingCement.unitCost
+                }
+            })
+
+            await tx.stockTransaction.create({
+                data: {
+                    itemId: existingCement.id,
+                    type: 'IN',
+                    quantity,
+                    reason: `Cement delivery to ${container.name}`,
+                    atcNumber,
+                    status: 'Approved',
+                    performedBy: session.user?.name || 'Storekeeper',
+                    approvedBy: 'System',
+                    approvedAt: new Date()
+                }
+            })
+        })
+    } else {
+        const sku = `CEM-CONT-${Date.now().toString(36).toUpperCase()}`
+        await prisma.inventoryItem.create({
+            data: {
+                name: cementName,
+                sku,
+                category: 'Raw Material',
+                itemType: 'Cement',
+                quantity,
+                maxCapacity,
+                unit: 'kg',
+                minThreshold,
+                unitCost,
+                totalValue: quantity * unitCost,
+                supplier,
+                locationId: containerId
+            }
+        })
+    }
+
+    revalidatePath('/inventory')
+    revalidatePath('/production')
+    return { success: true }
+}
+
+// Get stock levels by storage type (for multi-unit tracking)
+export async function getStockByStorageType(storageType?: 'Silo' | 'Container' | 'Warehouse' | 'Shelf') {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+
+    const whereClause = storageType
+        ? { location: { type: storageType } }
+        : {}
+
+    const items = await prisma.inventoryItem.findMany({
+        where: {
+            status: 'Active',
+            ...whereClause
+        },
+        include: {
+            location: true
+        },
+        orderBy: [
+            { location: { type: 'asc' } },
+            { name: 'asc' }
+        ]
+    })
+
+    // Group by storage type
+    const byStorageType = items.reduce((acc, item) => {
+        const type = item.location.type
+        if (!acc[type]) {
+            acc[type] = {
+                totalQuantity: 0,
+                totalValue: 0,
+                itemCount: 0,
+                items: []
+            }
+        }
+        acc[type].totalQuantity += item.quantity
+        acc[type].totalValue += item.totalValue
+        acc[type].itemCount += 1
+        acc[type].items.push({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.unit,
+            totalValue: item.totalValue,
+            locationName: item.location.name,
+            itemType: item.itemType
+        })
+        return acc
+    }, {} as Record<string, { totalQuantity: number; totalValue: number; itemCount: number; items: any[] }>)
+
+    // Calculate cement-specific totals
+    const cementInSilos = items
+        .filter(i => i.location.type === 'Silo' && i.itemType === 'Cement')
+        .reduce((sum, i) => sum + i.quantity, 0)
+
+    const cementInContainers = items
+        .filter(i => i.location.type === 'Container' && i.itemType === 'Cement')
+        .reduce((sum, i) => sum + i.quantity, 0)
+
+    return {
+        byStorageType: Object.entries(byStorageType).map(([type, data]) => ({
+            type,
+            ...data
+        })),
+        cementSummary: {
+            inSilos: cementInSilos,
+            inContainers: cementInContainers,
+            total: cementInSilos + cementInContainers
+        },
+        totalItems: items.length
+    }
+}
+
+// Create a container storage location
+export async function createContainer(formData: FormData) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'manage_inventory')
+
+    const name = formData.get('name') as string
+    const description = formData.get('description') as string
+    const capacity = parseFloat(formData.get('capacity') as string)
+
+    if (!name) {
+        throw new Error('Container name is required')
+    }
+
+    const existing = await prisma.storageLocation.findUnique({
+        where: { name }
+    })
+    if (existing) {
+        throw new Error(`A storage location with name "${name}" already exists`)
+    }
+
+    const container = await prisma.storageLocation.create({
+        data: {
+            name,
+            type: 'Container',
+            description,
+            capacity: capacity || 30000, // Default 30 tons
+            isActive: true
+        }
+    })
+
+    revalidatePath('/inventory')
+    return { success: true, container }
+}
+
 
 // ==================== SEEDING ====================
 

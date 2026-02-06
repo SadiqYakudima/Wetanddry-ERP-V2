@@ -1,0 +1,19 @@
+The Brief (Structured Requirements):
+1. Inventory Module: Multi-Unit Tracking
+Requirement: The system currently tracks cement in silos. We must now extend tracking to cement stored in containers as well.
+Technical Need: Create a storage type definition (Silo vs. Container) and ensure stock levels can be queried independently by storage medium.
+2. CRM & Finance: Project Prepayments
+Requirement: The CRM must allow clients to make prepayments specifically tied to projects (Deposit/Wallet functionality).
+Technical Need: Logic to handle "Unearned Revenue" or client credit balances that can be drawn down as orders are fulfilled.
+3. Production Management: Batch Variance & Rescheduling
+Requirement: For every production batch, we must track Pre-production input (Planned) vs. Post-production input (Actual).
+Requirement: The system must handle logic for "Delays" or "Rescheduling," likely requiring a status workflow update to account for inventory committed but not yet used due to delay.
+4. Sales & Finance: Payment Schedules & Order Logic
+Requirement: Support for Scheduled Payments (Installments) and Pending Orders.
+Technical Need: Define the logic/validation rules required to move an order from "Pending" to "Active" (e.g., specific payment threshold met).
+5. Procurement & Costing: Input Price Fluctuation
+Requirement: The system must track price changes for raw material inputs over time.
+Technical Need: Implement historical pricing logs or Weighted Average Cost (WAC) tracking to ensure production costs reflect the actual price of materials at the time of use, not just current market price.
+6. Inventory Control: Stock Reconciliation
+Requirement: A feature for manual inventory adjustment following monthly physical verification (specifically mentioned for Silo levels).
+Technical Need: An "Adjustment Wizard" that allows authorized users to overwrite system stock figures with physical count figures, automatically posting the variance to a "Loss/Gain" account.
