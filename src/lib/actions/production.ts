@@ -144,10 +144,38 @@ export async function getProductionRuns() {
     return await prisma.productionRun.findMany({
         include: {
             recipe: true,
-            silo: true
+            silo: true,
+            client: true,
+            order: true
         },
         orderBy: { createdAt: 'desc' },
         take: 50
+    })
+}
+
+// Get pending production orders (Active orders with unfulfilled items)
+export async function getPendingProductionOrders() {
+    return await prisma.orderLineItem.findMany({
+        where: {
+            status: { not: 'Fulfilled' },
+            order: {
+                // Include orders that are Pending or Active (not Draft, Fulfilled, Closed, or Cancelled)
+                status: { in: ['Pending', 'Active'] }
+            }
+        },
+        include: {
+            order: {
+                include: {
+                    client: true
+                }
+            },
+            recipe: true
+        },
+        orderBy: {
+            order: {
+                requiredDate: 'asc'
+            }
+        }
     })
 }
 

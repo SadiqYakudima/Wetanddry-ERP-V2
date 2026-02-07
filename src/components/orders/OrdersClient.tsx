@@ -102,8 +102,16 @@ export default function OrdersClient({
     userRole,
     userName
 }: OrdersClientProps) {
-    const [orders, setOrders] = useState<Order[]>(initialOrders)
-    const [stats, setStats] = useState<Stats>(initialStats)
+    const [orders, setOrders] = useState<Order[]>(initialOrders || [])
+    const [stats, setStats] = useState<Stats>(initialStats || {
+        total: 0,
+        draft: 0,
+        pending: 0,
+        active: 0,
+        fulfilled: 0,
+        totalValue: 0,
+        totalPaid: 0
+    })
     const [filter, setFilter] = useState({ status: 'all', search: '', clientId: 'all' })
     const [isPending, startTransition] = useTransition()
     const [showNewOrderModal, setShowNewOrderModal] = useState(false)
@@ -136,14 +144,14 @@ export default function OrdersClient({
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
-            'Draft': 'bg-gray-50 text-gray-600 border-gray-100',
-            'Pending': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-            'Active': 'bg-green-50 text-green-700 border-green-100',
-            'Fulfilled': 'bg-blue-50 text-blue-700 border-blue-100',
-            'Closed': 'bg-purple-50 text-purple-700 border-purple-100',
-            'Cancelled': 'bg-red-50 text-red-700 border-red-100'
+            'Draft': 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-600/20',
+            'Pending': 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20',
+            'Active': 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20',
+            'Fulfilled': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10',
+            'Closed': 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-700/10',
+            'Cancelled': 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10'
         }
-        return styles[status] || 'bg-gray-50 text-gray-600 border-gray-100'
+        return styles[status] || 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/10'
     }
 
     return (
@@ -152,17 +160,17 @@ export default function OrdersClient({
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500 rounded-lg">
+                        <div className="p-2.5 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-500/20">
                             <ShoppingCart className="w-6 h-6 text-white" />
                         </div>
                         Sales Orders
                     </h1>
-                    <p className="text-gray-500 mt-1">Manage orders, track deliveries, and process payments</p>
+                    <p className="text-gray-500 mt-1 ml-14">Manage orders, track deliveries, and process payments</p>
                 </div>
                 {canManageOrders && (
                     <button
                         onClick={() => setShowNewOrderModal(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 active:scale-95"
                     >
                         <Plus className="w-5 h-5" />
                         New Order
@@ -171,31 +179,31 @@ export default function OrdersClient({
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <StatCard label="Total Orders" value={stats.total} />
-                <StatCard label="Draft" value={stats.draft} />
-                <StatCard label="Pending" value={stats.pending} color="text-yellow-600" />
-                <StatCard label="Active" value={stats.active} color="text-green-600" />
-                <StatCard label="Total Value" value={`₦${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-emerald-600" />
-                <StatCard label="Collected" value={`₦${stats.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-purple-600" />
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <StatCard label="Total Orders" value={stats.total} icon={ShoppingCart} bgClass="bg-blue-100" color="text-blue-600" />
+                <StatCard label="Draft" value={stats.draft} icon={FileText} bgClass="bg-gray-100" color="text-gray-600" />
+                <StatCard label="Pending" value={stats.pending} icon={Clock} bgClass="bg-yellow-100" color="text-yellow-600" />
+                <StatCard label="Active" value={stats.active} icon={Box} bgClass="bg-green-100" color="text-green-600" />
+                <StatCard label="Total Value" value={`₦${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={DollarSign} bgClass="bg-emerald-100" color="text-emerald-600" />
+                <StatCard label="Collected" value={`₦${stats.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={CreditCard} bgClass="bg-purple-100" color="text-purple-600" />
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-4 p-1">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search orders"
+                        placeholder="Search orders..."
                         value={filter.search}
                         onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm hover:border-emerald-300 outline-none"
                     />
                 </div>
                 <select
                     value={filter.status}
                     onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:border-emerald-300 transition-all cursor-pointer outline-none"
                 >
                     <option value="all">All Status</option>
                     <option value="Draft">Draft</option>
@@ -208,7 +216,7 @@ export default function OrdersClient({
                 <select
                     value={filter.clientId}
                     onChange={(e) => setFilter({ ...filter, clientId: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:border-emerald-300 transition-all cursor-pointer outline-none"
                 >
                     <option value="all">All Clients</option>
                     {clients.map(c => (
@@ -218,19 +226,19 @@ export default function OrdersClient({
             </div>
 
             {/* Orders Table */}
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg shadow-gray-100/50 border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-white border-b border-gray-100">
+                        <thead className="bg-gray-50/50 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Value</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Client</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Items</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Paid</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                                <th className="px-4 py-5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -244,32 +252,35 @@ export default function OrdersClient({
                                 </tr>
                             ) : (
                                 filteredOrders.map(order => (
-                                    <tr key={order.id} className="hover:bg-gray-50/50 border-b border-gray-50 last:border-0">
-                                        <td className="px-6 py-4">
+                                    <tr key={order.id} className="group hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                                        <td className="px-6 py-5">
                                             <span className="font-semibold text-gray-800">{order.orderNumber}</span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-5">
                                             <div>
                                                 <div className="font-medium text-gray-800">{order.client.name}</div>
                                                 <div className="text-sm text-gray-500">{order.client.code}</div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm text-gray-600">{order._count.lineItems} item(s)</span>
+                                        <td className="px-6 py-5">
+                                            <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{order._count.lineItems} item(s)</span>
                                         </td>
-                                        <td className="px-6 py-4 font-semibold text-gray-800">₦{order.totalAmount.toLocaleString()}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-5 font-bold text-gray-800 tabular-nums">₦{order.totalAmount.toLocaleString()}</td>
+                                        <td className="px-6 py-5">
                                             <div className="text-sm">
-                                                <div className={order.amountPaid < order.totalAmount ? 'text-orange-600 font-bold text-base' : 'text-green-600 font-bold text-base'}>
+                                                <div className={`font-bold tabular-nums ${order.amountPaid < order.totalAmount ? 'text-orange-600' : 'text-green-600'}`}>
                                                     ₦{order.amountPaid.toLocaleString()}
                                                 </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {order.totalAmount > 0 ? `${Math.round((order.amountPaid / order.totalAmount) * 100)}%` : '0%'}
+                                                <div className="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full ${order.amountPaid < order.totalAmount ? 'bg-orange-500' : 'bg-green-500'}`}
+                                                        style={{ width: `${order.totalAmount > 0 ? (order.amountPaid / order.totalAmount) * 100 : 0}%` }}
+                                                    />
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusBadge(order.status)}`}>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(order.status)}`}>
                                                 {order.status}
                                             </span>
                                         </td>
@@ -330,11 +341,22 @@ export default function OrdersClient({
 
 // ==================== STAT CARD ====================
 
-function StatCard({ label, value, color = 'text-gray-900' }: { label: string; value: string | number; color?: string }) {
+function StatCard({ label, value, color = 'text-gray-900', icon: Icon, bgClass }: { label: string; value: string | number; color?: string; icon?: any, bgClass?: string }) {
     return (
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{label}</div>
-            <div className={`text-xl font-bold ${color} truncate`} title={String(value)}>{value}</div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                {Icon && <Icon className="w-16 h-16" />}
+            </div>
+
+            <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="text-sm font-semibold text-gray-500">{label}</div>
+                {Icon && (
+                    <div className={`p-2 rounded-xl ${bgClass || 'bg-gray-100'} text-gray-600 group-hover:scale-110 transition-transform duration-200`}>
+                        <Icon className={`w-5 h-5 ${color}`} />
+                    </div>
+                )}
+            </div>
+            <div className={`text-2xl font-bold ${color} truncate tracking-tight relative z-10`} title={String(value)}>{value}</div>
         </div>
     )
 }

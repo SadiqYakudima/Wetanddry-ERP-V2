@@ -25,166 +25,206 @@ export default async function FuelPage() {
         : 0;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Diesel & Fuel Intelligence</h1>
-                    <p className="text-gray-600 mt-1">Track fuel usage, costs, and vehicle efficiency</p>
-                </div>
+        <div className="space-y-8 w-full pb-10">
+            {/* Header */}
+            <div className="border-b border-gray-200 pb-5">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Diesel & Fuel Intelligence</h1>
+                <p className="text-gray-500 mt-2 text-lg">Track fuel usage, costs, and vehicle efficiency across your fleet.</p>
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-orange-100 rounded-full text-orange-600">
-                        <Droplet size={24} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600">Total Fuel Consumed</div>
-                        <div className="text-2xl font-bold text-gray-900">{totalFuel.toLocaleString()} L</div>
-                    </div>
-                </div>
-                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-green-100 rounded-full text-green-600">
-                        <DollarSign size={24} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600">Total Cost</div>
-                        <div className="text-2xl font-bold text-gray-900">₦{totalCost.toLocaleString()}</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div className="flex items-center gap-5">
+                        <div className="p-4 bg-orange-50 rounded-xl text-orange-600 ring-1 ring-orange-100">
+                            <Droplet size={28} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Consumption</div>
+                            <div className="text-3xl font-bold text-gray-900 mt-1">{totalFuel.toLocaleString()} <span className="text-lg text-gray-400 font-normal">L</span></div>
+                        </div>
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-                        <TrendingUp size={24} />
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div className="flex items-center gap-5">
+                        <div className="p-4 bg-green-50 rounded-xl text-green-600 ring-1 ring-green-100">
+                            <DollarSign size={28} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Cost</div>
+                            <div className="text-3xl font-bold text-gray-900 mt-1">₦{totalCost.toLocaleString()}</div>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-sm text-gray-600">Avg. Efficiency</div>
-                        <div className="text-2xl font-bold text-gray-900">{avgEfficiency.toFixed(2)} km/L</div>
+                </div>
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div className="flex items-center gap-5">
+                        <div className="p-4 bg-blue-50 rounded-xl text-blue-600 ring-1 ring-blue-100">
+                            <TrendingUp size={28} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Avg. Efficiency</div>
+                            <div className="text-3xl font-bold text-gray-900 mt-1">{avgEfficiency.toFixed(2)} <span className="text-lg text-gray-400 font-normal">km/L</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Log Fuel Form - Only shown to users with log_fuel permission */}
                 {canLogFuel && (
                     <div className="lg:col-span-1">
-                        <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                <Fuel className="text-blue-600" />
-                                Log Fuel Issuance
-                            </h2>
+                        <div className="bg-white border border-gray-100 rounded-xl shadow-sm sticky top-24 overflow-hidden">
+                            <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+                                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <Fuel className="text-blue-600" size={20} />
+                                    Log Fuel Issuance
+                                </h2>
+                            </div>
 
-                            <form action={logFuel} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Select Truck
-                                    </label>
-                                    <select
-                                        name="truckId"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
+                            <div className="p-6">
+                                <form action={logFuel} className="space-y-5">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                            Select Truck
+                                        </label>
+                                        <select
+                                            name="truckId"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/50 hover:bg-white"
+                                            required
+                                        >
+                                            <option value="">Choose a truck...</option>
+                                            {trucks.map(truck => (
+                                                <option key={truck.id} value={truck.id}>{truck.plateNumber} ({truck.model})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                            Liters Issued
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                name="liters"
+                                                type="number"
+                                                step="0.1"
+                                                placeholder="0.0"
+                                                className="w-full pl-4 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                required
+                                            />
+                                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400 font-medium">L</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                            Total Cost
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 font-medium">₦</div>
+                                            <input
+                                                name="cost"
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                            Current Mileage
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                name="mileage"
+                                                type="number"
+                                                placeholder="0"
+                                                className="w-full pl-4 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                required
+                                            />
+                                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400 font-medium">km</div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                                            <TrendingUp size={12} />
+                                            Used to calculate efficiency since last fill
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-lg shadow-blue-100 active:scale-[0.98] transform duration-100"
                                     >
-                                        <option value="">Choose a truck...</option>
-                                        {trucks.map(truck => (
-                                            <option key={truck.id} value={truck.id}>{truck.plateNumber} ({truck.model})</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Liters Issued
-                                    </label>
-                                    <input
-                                        name="liters"
-                                        type="number"
-                                        step="0.1"
-                                        placeholder="e.g., 50.0"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Total Cost (₦)
-                                    </label>
-                                    <input
-                                        name="cost"
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="e.g., 45000"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Current Mileage (km)
-                                    </label>
-                                    <input
-                                        name="mileage"
-                                        type="number"
-                                        placeholder="e.g., 12500"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Used to calculate efficiency since last fill.</p>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                                >
-                                    Save Log
-                                </button>
-                            </form>
+                                        Save Log Entry
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Fuel Logs List */}
                 <div className={canLogFuel ? "lg:col-span-2" : "lg:col-span-3"}>
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-900">Recent Fuel Logs</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className="bg-gray-50 border-b border-gray-100">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Truck</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Liters</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Cost</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Efficiency</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Truck</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Liters</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Efficiency</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-100">
                                     {logs.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                                                No fuel logs found.
+                                            <td colSpan={5} className="px-6 py-12 text-center">
+                                                <div className="flex flex-col items-center justify-center text-gray-400">
+                                                    <div className="p-3 bg-gray-50 rounded-full mb-3">
+                                                        <Droplet size={24} className="text-gray-300" />
+                                                    </div>
+                                                    <p className="text-base font-medium text-gray-900">No fuel records found</p>
+                                                    <p className="text-sm mt-1">Start logging fuel usage to see data here.</p>
+                                                </div>
                                             </td>
                                         </tr>
                                     ) : (
                                         logs.map((log) => (
-                                            <tr key={log.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 text-sm text-gray-900">{log.date.toLocaleDateString()}</td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{log.truck.plateNumber}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">{log.liters} L</td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">₦{log.cost.toLocaleString()}</td>
-                                                <td className="px-6 py-4">
+                                            <tr key={log.id} className="hover:bg-gray-50/80 transition-colors group">
+                                                <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap font-medium">
+                                                    {log.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                                                    <div className="flex flex-col">
+                                                        <span>{log.truck.plateNumber}</span>
+                                                        <span className="text-xs text-gray-400 font-normal">{log.truck.model}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                                    <span className="font-medium text-gray-900">{log.liters}</span> L
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                                    ₦{log.cost.toLocaleString()}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     {log.efficiency ? (
                                                         <span className={cn(
-                                                            "inline-block px-2 py-1 text-xs font-semibold rounded-full",
-                                                            log.efficiency > 3 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                                            "inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ring-1 ring-inset",
+                                                            log.efficiency > 3
+                                                                ? "bg-green-50 text-green-700 ring-green-600/20"
+                                                                : "bg-amber-50 text-amber-700 ring-amber-600/20"
                                                         )}>
                                                             {log.efficiency.toFixed(2)} km/L
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-400 text-sm">-</span>
+                                                        <span className="text-gray-300 text-sm group-hover:text-gray-400 transition-colors">-</span>
                                                     )}
                                                 </td>
                                             </tr>

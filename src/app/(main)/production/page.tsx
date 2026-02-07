@@ -17,12 +17,17 @@ export default async function ProductionPage() {
     const canManageRecipes = userRole ? hasPermission(userRole, 'manage_recipes') : false;
     const canViewCrm = userRole ? hasPermission(userRole, 'view_crm') : false;
 
-    const [recipes, silos, recentRuns, inventoryItems, clients] = await Promise.all([
+    // Use dynamic import to avoid circular dependency issues if any
+    const { getPendingProductionOrders } = await import('@/lib/actions/production');
+    const { getClientsForSelect } = await import('@/lib/actions/crm');
+
+    const [recipes, silos, recentRuns, inventoryItems, clients, pendingOrders] = await Promise.all([
         getRecipes(),
         getSilos(),
         getProductionRuns(),
         getAllInventoryItems(),
         canViewCrm ? getClientsForSelect() : Promise.resolve([]),
+        getPendingProductionOrders()
     ]);
 
     return (
@@ -32,6 +37,7 @@ export default async function ProductionPage() {
             recentRuns={recentRuns}
             inventoryItems={inventoryItems}
             clients={clients}
+            pendingOrders={pendingOrders}
             initialPermissions={{ canLogProduction, canManageRecipes }}
         />
     );

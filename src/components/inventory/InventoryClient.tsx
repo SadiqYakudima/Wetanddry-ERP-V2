@@ -8,7 +8,7 @@ import {
     Plus, ChevronDown, Clock, CheckCircle2, XCircle, Warehouse, FlaskConical,
     Calendar, DollarSign, Layers, Settings, Eye, Edit, Trash2, X, Loader2,
     AlertCircle, TrendingUp, TrendingDown, BarChart3, History, Info, Save, Activity,
-    Container
+    Container, Clipboard, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ActivityTab, { PendingApproval, StockTransaction } from './ActivityTab';
@@ -1129,82 +1129,98 @@ function StockModal({ type, item, items, currentUser, onClose }: {
     const isStockIn = type === 'in';
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className={cn(
-                "bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col",
-                isStockIn ? "max-w-2xl max-h-[90vh]" : "max-w-md"
+                "bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col transform transition-all",
+                isStockIn ? "max-w-3xl max-h-[90vh]" : "max-w-lg"
             )}>
                 {/* Header */}
                 <div className={cn(
-                    "p-6 text-white",
+                    "p-6 text-white relative overflow-hidden",
                     isStockIn
-                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
-                        : "bg-gradient-to-r from-blue-500 to-blue-600"
+                        ? "bg-gradient-to-br from-emerald-600 to-teal-700"
+                        : "bg-gradient-to-br from-blue-600 to-indigo-700"
                 )}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            {isStockIn ? <ArrowDownRight size={24} /> : <ArrowUpRight size={24} />}
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        {isStockIn ? <ArrowDownRight size={120} /> : <ArrowUpRight size={120} />}
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                {isStockIn ? <ArrowDownRight size={28} /> : <ArrowUpRight size={28} />}
+                            </div>
                             <div>
-                                <h3 className="text-xl font-bold">
-                                    {isStockIn ? 'Receive Stock Delivery' : 'Stock Out'}
+                                <h3 className="text-2xl font-bold tracking-tight">
+                                    {isStockIn ? 'Receive Stock' : 'Issue Stock'}
                                 </h3>
-                                {isStockIn && (
-                                    <p className="text-emerald-100 text-sm mt-1">
-                                        Record materials received from suppliers
-                                    </p>
-                                )}
+                                <p className={cn(
+                                    "text-sm font-medium mt-1",
+                                    isStockIn ? "text-emerald-100" : "text-blue-100"
+                                )}>
+                                    {isStockIn ? 'Record new material delivery' : 'Record usage or transfer'}
+                                </p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8">
                     {/* Material Selection */}
                     <div className="space-y-4">
-                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                            <Package size={18} className="text-gray-500" />
-                            Material Selection
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Material *</label>
-                                <select
-                                    name="itemId"
-                                    value={selectedItemId}
-                                    onChange={(e) => setSelectedItemId(e.target.value)}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                                >
-                                    <option value="">Choose a material...</option>
-                                    {items.map(i => (
-                                        <option key={i.id} value={i.id}>
-                                            {i.name} ({i.location.name}) - Current: {i.quantity.toLocaleString()} {i.unit}
-                                        </option>
-                                    ))}
-                                </select>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-gray-100 rounded-lg text-gray-500">
+                                <Package size={18} />
                             </div>
+                            <h4 className="font-semibold text-gray-900">Material Selection</h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Item to {isStockIn ? 'Receive' : 'Issue'}</label>
+                                <div className="relative">
+                                    <select
+                                        name="itemId"
+                                        value={selectedItemId}
+                                        onChange={(e) => setSelectedItemId(e.target.value)}
+                                        required
+                                        className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none font-medium text-gray-700"
+                                    >
+                                        <option value="">Choose a material...</option>
+                                        {items.map(i => (
+                                            <option key={i.id} value={i.id}>
+                                                {i.name} • {i.location.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                </div>
+                            </div>
+
                             {selectedItem && (
-                                <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-4 text-sm">
+                                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-200 shadow-sm grid grid-cols-3 gap-6">
                                     <div>
-                                        <span className="text-gray-500">Current Stock</span>
-                                        <p className="font-semibold text-gray-900">
-                                            {selectedItem.quantity.toLocaleString()} {selectedItem.unit}
-                                        </p>
+                                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Available Stock</span>
+                                        <div className="font-bold text-gray-900 text-lg mt-1 flex items-baseline gap-1">
+                                            {selectedItem.quantity.toLocaleString()} <span className="text-sm font-normal text-gray-500">{selectedItem.unit}</span>
+                                        </div>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500">Unit Cost</span>
-                                        <p className="font-semibold text-gray-900">
+                                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Cost</span>
+                                        <div className="font-bold text-gray-900 text-lg mt-1">
                                             ₦{selectedItem.unitCost.toLocaleString()}
-                                        </p>
+                                        </div>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500">Supplier</span>
-                                        <p className="font-semibold text-gray-900">
+                                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Supplier</span>
+                                        <div className="font-bold text-gray-900 text-lg mt-1 truncate" title={selectedItem.supplier || 'N/A'}>
                                             {selectedItem.supplier || 'N/A'}
-                                        </p>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1213,76 +1229,79 @@ function StockModal({ type, item, items, currentUser, onClose }: {
 
                     {/* Stock In: Delivery Details Section */}
                     {isStockIn && (
-                        <div className="space-y-4 border-t border-gray-100 pt-6">
-                            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                                <Layers size={18} className="text-gray-500" />
-                                Delivery Details
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg">
+                                    <Layers size={18} />
+                                </div>
+                                <h4 className="font-semibold text-gray-900">Delivery Information</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Supplier Name</label>
                                     <input
                                         type="text"
                                         name="supplierName"
                                         defaultValue={selectedItem?.supplier || ''}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-gray-400"
                                         placeholder="e.g., Dangote Cement"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Delivery Date</label>
                                     <input
                                         type="date"
                                         name="deliveryDate"
                                         defaultValue={new Date().toISOString().split('T')[0]}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-gray-700"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Invoice Number</label>
                                     <input
                                         type="text"
                                         name="invoiceNumber"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-gray-400"
                                         placeholder="e.g., INV-2024-001"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Waybill/Delivery Note #</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Waybill #</label>
                                     <input
                                         type="text"
                                         name="waybillNumber"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-gray-400"
                                         placeholder="e.g., WB-12345"
                                     />
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        {selectedItem?.itemType === 'Cement' ? 'ATC Number' : 'Batch/Lot Number'}
+                                <div className="md:col-span-2">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                                        {selectedItem?.itemType === 'Cement' ? 'ATC Number' : 'Batch / Lot Number'}
                                     </label>
                                     <input
                                         type="text"
                                         name={selectedItem?.itemType === 'Cement' ? 'atcNumber' : 'batchNumber'}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                                        placeholder={selectedItem?.itemType === 'Cement' ? 'e.g., ATC-2024-001' : 'e.g., BATCH-2024-DEC-001 (for traceability)'}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-gray-400"
+                                        placeholder={selectedItem?.itemType === 'Cement' ? 'e.g., ATC-2024-001' : 'e.g., B2024-DEC-001'}
                                     />
-                                    {selectedItem?.itemType === 'Cement' && (
-                                        <p className="text-xs text-gray-500 mt-1">ATC Number for cement traceability</p>
-                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {/* Quantity & Cost Section */}
-                    <div className="space-y-4 border-t border-gray-100 pt-6">
-                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                            <DollarSign size={18} className="text-gray-500" />
-                            Quantity & {isStockIn ? 'Cost' : 'Details'}
-                        </h4>
-                        <div className={cn("grid gap-4", isStockIn ? "grid-cols-3" : "grid-cols-1")}>
+                    <div className="space-y-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-amber-100 text-amber-600 rounded-lg">
+                                <DollarSign size={18} />
+                            </div>
+                            <h4 className="font-semibold text-gray-900">{isStockIn ? 'Quantity & Valuation' : 'Transaction Details'}</h4>
+                        </div>
+
+                        <div className={cn("grid gap-5", isStockIn ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1")}>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
                                     Quantity {selectedItem ? `(${selectedItem.unit})` : ''} *
                                 </label>
                                 <input
@@ -1293,14 +1312,14 @@ function StockModal({ type, item, items, currentUser, onClose }: {
                                     step="0.01"
                                     min="0.01"
                                     required
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                                    placeholder="Enter quantity"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-semibold text-gray-900"
+                                    placeholder="0.00"
                                 />
                             </div>
                             {isStockIn && (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₦)</label>
+                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit Cost (₦)</label>
                                         <input
                                             type="number"
                                             name="unitCostAtTime"
@@ -1308,75 +1327,74 @@ function StockModal({ type, item, items, currentUser, onClose }: {
                                             onChange={(e) => setUnitCost(e.target.value)}
                                             step="0.01"
                                             min="0"
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-semibold text-gray-900"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
-                                        <div className="px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 font-semibold">
+                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Total Cost</label>
+                                        <div className="px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-emerald-700 font-bold flex items-center h-[52px]">
                                             ₦{parseFloat(totalCost).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 </>
                             )}
                         </div>
+
                         {isStockIn && (
-                            <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={updateItemCost}
-                                    onChange={(e) => setUpdateItemCost(e.target.checked)}
-                                    className="w-5 h-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
-                                />
+                            <label className="flex items-start gap-3 p-4 bg-amber-50/50 rounded-xl border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition-colors">
+                                <div className="mt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={updateItemCost}
+                                        onChange={(e) => setUpdateItemCost(e.target.checked)}
+                                        className="w-5 h-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                                    />
+                                </div>
                                 <div>
-                                    <span className="font-medium text-amber-800">Update item's unit cost</span>
-                                    <p className="text-xs text-amber-600">Check this if the price has changed from ₦{selectedItem?.unitCost.toLocaleString() || '0'}</p>
+                                    <span className="font-semibold text-amber-900 block text-sm">Update stored unit cost</span>
+                                    <p className="text-xs text-amber-600 mt-0.5">Check this if the new price ({parseFloat(unitCost).toLocaleString()} ₦) should replace the current system price for future transactions.</p>
                                 </div>
                             </label>
                         )}
                     </div>
 
                     {/* Reason & Notes */}
-                    <div className="space-y-4 border-t border-gray-100 pt-6">
+                    <div className="space-y-4 pt-4 border-t border-gray-100">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {isStockIn ? 'Reason/Purpose' : 'Reason for Stock Out *'}
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                                {isStockIn ? 'Reason / Purpose' : 'Reason for Stock Out *'}
                             </label>
                             <input
                                 type="text"
                                 name="reason"
                                 required={!isStockIn}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                 placeholder={isStockIn ? "e.g., Regular restocking" : "e.g., Production batch #123, Site XYZ"}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Additional Notes</label>
                             <textarea
                                 name="notes"
                                 rows={2}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"
-                                placeholder="Any additional information..."
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-none"
+                                placeholder="Any additional context..."
                             />
                         </div>
                     </div>
 
-                    {/* Audit Info */}
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock size={16} />
-                            <span>
-                                {isStockIn ? 'Received' : 'Processed'} by <strong>{currentUser}</strong> on {new Date().toLocaleDateString()}
-                            </span>
-                        </div>
+                    {/* Audit Info Helper */}
+                    <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
+                        <Clock size={14} />
+                        <span>Action will be logged by <strong>{currentUser}</strong> on {new Date().toLocaleDateString()}</span>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-4 border-t border-gray-100">
+                    <div className="flex gap-4 pt-6 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            className="flex-1 py-4 px-6 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-900 transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
@@ -1384,15 +1402,15 @@ function StockModal({ type, item, items, currentUser, onClose }: {
                             type="submit"
                             disabled={isPending}
                             className={cn(
-                                "flex-1 py-3 px-4 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2",
+                                "flex-[2] py-4 px-6 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2",
                                 isStockIn
-                                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-                                    : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
+                                    ? "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:to-emerald-400 shadow-emerald-500/20"
+                                    : "bg-gradient-to-r from-blue-600 to-blue-500 hover:to-blue-400 shadow-blue-500/20",
                                 isPending && "opacity-70 cursor-not-allowed"
                             )}
                         >
                             {isPending && <Loader2 size={18} className="animate-spin" />}
-                            {isPending ? 'Processing...' : isStockIn ? 'Record Delivery' : 'Confirm Stock Out'}
+                            {isPending ? 'Processing...' : isStockIn ? 'Complete Reception' : 'Confirm Issue'}
                         </button>
                     </div>
                 </form>
@@ -1422,188 +1440,230 @@ function AddItemModal({ locations, currentUser, onClose }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="p-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Package size={24} />
-                            <h3 className="text-xl font-bold">Add New Item</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Package size={100} />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <Plus size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold tracking-tight">Add New Item</h3>
+                                <p className="text-purple-100 text-sm mt-1">Register new inventory to the system</p>
+                            </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
-                            <input
-                                type="text"
-                                name="name"
-                                required
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="e.g., Portland Cement Grade 42.5"
-                            />
-                        </div>
+                <form onSubmit={handleSubmit} className="p-8 overflow-y-auto flex-1 space-y-8">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                            Basic Information
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Item Name *</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="e.g., Portland Cement Grade 42.5"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">SKU</label>
-                            <input
-                                type="text"
-                                name="sku"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="e.g., CEM-42-001"
-                            />
-                        </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">SKU</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="sku"
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                        placeholder="e.g., CEM-42-001"
+                                    />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                </div>
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                            <select
-                                name="category"
-                                required
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            >
-                                <option value="">Select category</option>
-                                <option value="Raw Material">Raw Material</option>
-                                <option value="Consumable">Consumable</option>
-                                <option value="Equipment">Equipment</option>
-                                <option value="Asset">Asset</option>
-                            </select>
-                        </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Category *</label>
+                                <select
+                                    name="category"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
+                                >
+                                    <option value="">Select category</option>
+                                    <option value="Raw Material">Raw Material</option>
+                                    <option value="Consumable">Consumable</option>
+                                    <option value="Equipment">Equipment</option>
+                                    <option value="Asset">Asset</option>
+                                </select>
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Item Type</label>
-                            <select
-                                name="itemType"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            >
-                                <option value="General">General</option>
-                                <option value="Cement">Cement</option>
-                                <option value="Aggregate">Aggregate</option>
-                                <option value="Admixture">Admixture</option>
-                            </select>
-                        </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Item Type</label>
+                                <select
+                                    name="itemType"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
+                                >
+                                    <option value="General">General</option>
+                                    <option value="Cement">Cement</option>
+                                    <option value="Aggregate">Aggregate</option>
+                                    <option value="Admixture">Admixture</option>
+                                </select>
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Storage Location *</label>
-                            <select
-                                name="locationId"
-                                required
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            >
-                                <option value="">Select location</option>
-                                {locations.map(loc => (
-                                    <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Initial Quantity</label>
-                            <input
-                                type="number"
-                                name="quantity"
-                                step="0.01"
-                                defaultValue="0"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
-                            <select
-                                name="unit"
-                                required
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            >
-                                <option value="">Select unit</option>
-                                <option value="kg">Kilograms (kg)</option>
-                                <option value="liters">Liters</option>
-                                <option value="pcs">Pieces</option>
-                                <option value="m³">Cubic Meters (m³)</option>
-                                <option value="tons">Tons</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Max Capacity</label>
-                            <input
-                                type="number"
-                                name="maxCapacity"
-                                step="0.01"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="For silo items"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Min Threshold</label>
-                            <input
-                                type="number"
-                                name="minThreshold"
-                                step="0.01"
-                                defaultValue="0"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="Low stock alert level"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₦)</label>
-                            <input
-                                type="number"
-                                name="unitCost"
-                                step="0.01"
-                                defaultValue="0"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
-                            <input
-                                type="date"
-                                name="expiryDate"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Batch Number</label>
-                            <input
-                                type="text"
-                                name="batchNumber"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="e.g., B2024-001"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
-                            <input
-                                type="text"
-                                name="supplier"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="Supplier name"
-                            />
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Supplier</label>
+                                <input
+                                    type="text"
+                                    name="supplier"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="Supplier name"
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    {/* Storage & Tracking */}
+                    <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            Storage Details
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Storage Location *</label>
+                                <select
+                                    name="locationId"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
+                                >
+                                    <option value="">Select location</option>
+                                    {locations.map(loc => (
+                                        <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Initial Quantity</label>
+                                <input
+                                    type="number"
+                                    name="quantity"
+                                    step="0.01"
+                                    defaultValue="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit *</label>
+                                <select
+                                    name="unit"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
+                                >
+                                    <option value="">Select unit</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                    <option value="liters">Liters</option>
+                                    <option value="pcs">Pieces</option>
+                                    <option value="m³">Cubic Meters (m³)</option>
+                                    <option value="tons">Tons</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Max Capacity</label>
+                                <input
+                                    type="number"
+                                    name="maxCapacity"
+                                    step="0.01"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="Optional"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Valuation & Alerts */}
+                    <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Valuation & Alerts
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit Cost (₦)</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                                    <input
+                                        type="number"
+                                        name="unitCost"
+                                        step="0.01"
+                                        defaultValue="0"
+                                        className="w-full pl-9 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Low Stock Threshold</label>
+                                <input
+                                    type="number"
+                                    name="minThreshold"
+                                    step="0.01"
+                                    defaultValue="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="Alert at..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Expiry Date</label>
+                                <input
+                                    type="date"
+                                    name="expiryDate"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all text-gray-700"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Batch Number</label>
+                                <input
+                                    type="text"
+                                    name="batchNumber"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="e.g., B2024-001"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 pt-4 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            className="flex-1 py-4 px-6 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-medium hover:from-purple-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2"
+                            className="flex-[2] py-4 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold hover:to-indigo-500 transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             {isPending && <Loader2 size={18} className="animate-spin" />}
                             {isPending ? 'Creating...' : 'Create Item'}
@@ -1633,100 +1693,124 @@ function MaterialRequestModal({ items, onClose }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-6 bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Clock size={24} />
-                            <h3 className="text-xl font-bold">Material Request</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+                <div className="p-6 bg-gradient-to-br from-amber-500 to-orange-600 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Clipboard size={100} />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <Clipboard size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold tracking-tight">Material Request</h3>
+                                <p className="text-amber-100 text-sm mt-1">Submit request for approval</p>
+                            </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
-                    <p className="text-amber-100 mt-2 text-sm">Submit a request for approval by Admin/Manager</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Request Type *</label>
-                        <select
-                            name="requestType"
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        >
-                            <option value="">Select type</option>
-                            <option value="Stock In">Stock In (Receiving)</option>
-                            <option value="Stock Out">Stock Out (Issuing)</option>
-                            <option value="Transfer">Transfer Between Locations</option>
-                        </select>
-                    </div>
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-amber-100 text-amber-600 rounded-lg">
+                                <AlertCircle size={18} />
+                            </div>
+                            <h4 className="font-semibold text-gray-900">Request Details</h4>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Item *</label>
-                        <select
-                            name="itemId"
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        >
-                            <option value="">Choose an item...</option>
-                            {items.map(i => (
-                                <option key={i.id} value={i.id}>{i.name} ({i.location.name})</option>
-                            ))}
-                        </select>
-                    </div>
+                        <div className="grid grid-cols-2 gap-5">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Request Type *</label>
+                                <select
+                                    name="requestType"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all"
+                                >
+                                    <option value="">Select type</option>
+                                    <option value="Stock In">Stock In (Receiving)</option>
+                                    <option value="Stock Out">Stock Out (Issuing)</option>
+                                    <option value="Transfer">Transfer</option>
+                                </select>
+                            </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
-                        <input
-                            type="number"
-                            name="quantity"
-                            step="0.01"
-                            min="0.01"
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            placeholder="Enter quantity"
-                        />
-                    </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
+                                <select
+                                    name="priority"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all"
+                                >
+                                    <option value="Normal">Normal</option>
+                                    <option value="Low">Low</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                        <select
-                            name="priority"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        >
-                            <option value="Normal">Normal</option>
-                            <option value="Low">Low</option>
-                            <option value="High">High</option>
-                            <option value="Urgent">Urgent</option>
-                        </select>
-                    </div>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Select Item *</label>
+                            <div className="relative">
+                                <select
+                                    name="itemId"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all appearance-none"
+                                >
+                                    <option value="">Choose an item...</option>
+                                    {items.map(i => (
+                                        <option key={i.id} value={i.id}>{i.name} ({i.location.name})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
-                        <textarea
-                            name="reason"
-                            rows={2}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
-                            placeholder="Why is this material needed?"
-                        />
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Quantity *</label>
+                            <input
+                                type="number"
+                                name="quantity"
+                                step="0.01"
+                                min="0.01"
+                                required
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all placeholder:text-gray-400"
+                                placeholder="Enter quantity"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Reason / Justification</label>
+                            <textarea
+                                name="reason"
+                                rows={3}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all resize-none"
+                                placeholder="Why is this material needed?"
+                            />
+                        </div>
                     </div>
 
                     <input type="hidden" name="requestedBy" value="Storekeeper" />
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-4 pt-4 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            className="flex-1 py-4 px-6 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-medium hover:from-amber-600 hover:to-amber-700 transition-all flex items-center justify-center gap-2"
+                            className="flex-[2] py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold hover:to-orange-500 transition-all shadow-lg hover:shadow-amber-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             {isPending && <Loader2 size={18} className="animate-spin" />}
                             {isPending ? 'Submitting...' : 'Submit Request'}
@@ -1764,72 +1848,88 @@ function SiloModal({ silo, onClose }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Database size={24} />
-                            <h3 className="text-xl font-bold">{isEditing ? 'Edit Silo' : 'Add New Silo'}</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+                <div className="p-6 bg-gradient-to-br from-indigo-500 to-violet-600 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Database size={100} />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <Database size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold tracking-tight">{isEditing ? 'Edit Silo' : 'New Silo'}</h3>
+                                <p className="text-indigo-100 text-sm mt-1">Manage storage infrastructure</p>
+                            </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Silo Name *</label>
-                        <input
-                            type="text"
-                            name="name"
-                            defaultValue={silo?.name || ''}
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                            placeholder="e.g., Silo 3"
-                        />
-                    </div>
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Silo Name *</label>
+                            <input
+                                type="text"
+                                name="name"
+                                defaultValue={silo?.name || ''}
+                                required
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-gray-400"
+                                placeholder="e.g., Silo 3"
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea
-                            name="description"
-                            rows={2}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all resize-none"
-                            placeholder="e.g., Secondary cement storage - Grade 52.5"
-                        />
-                    </div>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Description</label>
+                            <textarea
+                                name="description"
+                                rows={2}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-none"
+                                placeholder="e.g., Secondary cement storage - Grade 52.5"
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Capacity (kg)</label>
-                        <input
-                            type="number"
-                            name="capacity"
-                            defaultValue={silo?.maxCapacity || 95000}
-                            step="1000"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                            placeholder="Maximum capacity in kg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">95,000 kg = 95 tons = 1,900 bags (50kg each)</p>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Capacity (kg)</label>
+                            <input
+                                type="number"
+                                name="capacity"
+                                defaultValue={silo?.maxCapacity || 95000}
+                                step="1000"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-mono"
+                                placeholder="95000"
+                            />
+                            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                <Info size={12} />
+                                95,000 kg = 95 tons = 1,900 bags (50kg)
+                            </p>
+                        </div>
                     </div>
 
                     {isEditing && (
                         <input type="hidden" name="isActive" value="true" />
                     )}
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-4 pt-4 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            className="flex-1 py-4 px-6 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-indigo-700 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-4 px-6 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl font-bold hover:to-violet-500 transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             {isPending && <Loader2 size={18} className="animate-spin" />}
                             {isPending ? 'Saving...' : isEditing ? 'Update Silo' : 'Create Silo'}
@@ -1863,120 +1963,156 @@ function LoadCementModal({ silo, onClose }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-6 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <ArrowDownRight size={24} />
-                            <h3 className="text-xl font-bold">Load Cement to {silo.name}</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+                <div className="p-6 bg-gradient-to-br from-emerald-500 to-teal-600 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <ArrowDownRight size={100} />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <ArrowDownRight size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold tracking-tight">Load Cement</h3>
+                                <p className="text-emerald-100 text-sm mt-1">Refill {silo.name}</p>
+                            </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
-                    <p className="text-emerald-100 mt-2 text-sm">
-                        Current Level: {silo.currentLevel.toLocaleString()} {silo.unit} ({Math.floor(silo.currentLevel / 50).toLocaleString()} bags) • {silo.percentage.toFixed(1)}% full
-                    </p>
+
+                    {/* Visual Capacity Indicator */}
+                    <div className="mt-6 bg-black/20 rounded-xl p-3 backdrop-blur-sm border border-white/10">
+                        <div className="flex justify-between text-xs font-semibold mb-1.5 opacity-90">
+                            <span>Current Level</span>
+                            <span>{silo.percentage.toFixed(1)}% Full</span>
+                        </div>
+                        <div className="h-2 w-full bg-black/20 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-white/90 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min(silo.percentage, 100)}%` }}
+                            />
+                        </div>
+                        <div className="flex justify-between text-xs mt-1.5 opacity-75">
+                            <span>{silo.currentLevel.toLocaleString()} {silo.unit}</span>
+                            <span>{Math.floor(silo.currentLevel / 50).toLocaleString()} bags</span>
+                        </div>
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Cement Type *</label>
-                        <input
-                            type="text"
-                            name="cementName"
-                            defaultValue={silo.itemName || ''}
-                            required
-                            disabled={hasExistingCement}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all disabled:bg-gray-50"
-                            placeholder="e.g., Portland Cement (Grade 42.5)"
-                        />
-                        {hasExistingCement && (
-                            <>
-                                <input type="hidden" name="cementName" value={silo.itemName || ''} />
-                                <p className="text-xs text-gray-500 mt-1">Cement type is fixed for this silo</p>
-                            </>
-                        )}
-                    </div>
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Cement Type *</label>
+                            <input
+                                type="text"
+                                name="cementName"
+                                defaultValue={silo.itemName || ''}
+                                required
+                                disabled={hasExistingCement}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
+                                placeholder="e.g., Portland Cement (Grade 42.5)"
+                            />
+                            {hasExistingCement && (
+                                <>
+                                    <input type="hidden" name="cementName" value={silo.itemName || ''} />
+                                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                        <Lock size={12} />
+                                        Cement type is locked to currently stored material
+                                    </p>
+                                </>
+                            )}
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Quantity to Add (kg) *</label>
-                        <input
-                            type="number"
-                            name="quantity"
-                            step="50"
-                            min="50"
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                            placeholder="e.g., 5000 (= 100 bags)"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">1 bag = 50kg. Enter value in kg.</p>
-                    </div>
+                        <div className="grid grid-cols-2 gap-5">
+                            <div className="col-span-2 md:col-span-1">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Quantity to Load (kg) *</label>
+                                <input
+                                    type="number"
+                                    name="quantity"
+                                    step="50"
+                                    min="50"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-gray-900"
+                                    placeholder="e.g., 30000"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">1 bag = 50kg</p>
+                            </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ATC Number *</label>
-                        <input
-                            type="text"
-                            name="atcNumber"
-                            required
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                            placeholder="e.g., ATC-2024-001"
-                        />
+                            <div className="col-span-2 md:col-span-1">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">ATC Number *</label>
+                                <input
+                                    type="text"
+                                    name="atcNumber"
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all uppercase placeholder:normal-case"
+                                    placeholder="e.g., ATC-2024-001"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {!hasExistingCement && (
-                        <>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="pt-4 border-t border-gray-100 space-y-4">
+                            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <Settings size={16} className="text-emerald-500" />
+                                Initial Configuration
+                            </h4>
+                            <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Capacity (kg)</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Max Capacity</label>
                                     <input
                                         type="number"
                                         name="maxCapacity"
                                         defaultValue={silo.maxCapacity || 95000}
                                         step="1000"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Min Threshold (kg)</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Min Threshold</label>
                                     <input
                                         type="number"
                                         name="minThreshold"
                                         defaultValue={15000}
                                         step="1000"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Supplier</label>
+                                    <input
+                                        type="text"
+                                        name="supplier"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-gray-400"
+                                        placeholder="e.g., Dangote Cement Ltd"
                                     />
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
-                                <input
-                                    type="text"
-                                    name="supplier"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                                    placeholder="e.g., Dangote Cement Ltd"
-                                />
-                            </div>
-                        </>
+                        </div>
                     )}
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-4 pt-4 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            className="flex-1 py-4 px-6 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                            className="flex-[2] py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:to-teal-500 transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             {isPending && <Loader2 size={18} className="animate-spin" />}
-                            {isPending ? 'Loading...' : 'Load Cement'}
+                            {isPending ? 'Loading...' : 'Confirm Load'}
                         </button>
                     </div>
                 </form>
@@ -1984,6 +2120,8 @@ function LoadCementModal({ silo, onClose }: {
         </div>
     );
 }
+
+// ==================== VIEW/EDIT ITEM MODAL ====================
 
 // ==================== VIEW/EDIT ITEM MODAL ====================
 
@@ -2026,57 +2164,65 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all">
                 {/* Header */}
-                <div className="p-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Package size={24} />
+                <div className="p-6 bg-gradient-to-br from-indigo-600 to-purple-700 text-white relative overflow-hidden flex-shrink-0">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Package size={120} />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <Package size={28} />
+                            </div>
                             <div>
-                                <h3 className="text-xl font-bold">{item.name}</h3>
-                                {item.sku && <p className="text-sm text-indigo-100">SKU: {item.sku}</p>}
+                                <h3 className="text-2xl font-bold tracking-tight">{item.name}</h3>
+                                {item.sku && <p className="text-indigo-100 text-sm font-mono mt-0.5">SKU: {item.sku}</p>}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <span className={cn(
-                                "px-3 py-1 text-xs font-semibold rounded-full",
+                                "px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm border border-white/10 backdrop-blur-md",
                                 item.quantity <= item.minThreshold
-                                    ? "bg-red-500 text-white"
+                                    ? "bg-rose-500 text-white"
                                     : "bg-emerald-500 text-white"
                             )}>
                                 {item.quantity <= item.minThreshold ? 'Low Stock' : 'In Stock'}
                             </span>
-                            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                                <X size={20} />
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                            >
+                                <X size={24} />
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="border-b border-gray-200 px-6 bg-gray-50">
-                    <div className="flex gap-1">
+                <div className="border-b border-gray-200 px-6 bg-gray-50/50 flex-shrink-0">
+                    <div className="flex gap-6">
                         {[
-                            { id: 'details', label: 'Details', icon: <Info size={16} /> },
-                            { id: 'edit', label: 'Edit', icon: <Edit size={16} /> },
-                            { id: 'history', label: 'Transaction History', icon: <History size={16} /> },
-                            { id: 'pricing', label: 'Price History', icon: <DollarSign size={16} /> }
+                            { id: 'details', label: 'Overview', icon: <Info size={18} /> },
+                            { id: 'edit', label: 'Edit Item', icon: <Edit size={18} /> },
+                            { id: 'history', label: 'History', icon: <History size={18} /> },
+                            { id: 'pricing', label: 'Pricing', icon: <DollarSign size={18} /> }
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTabModal(tab.id as typeof activeTabModal)}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-3 font-medium transition-all relative",
+                                    "flex items-center gap-2 py-4 font-medium transition-all relative outline-none",
                                     activeTabModal === tab.id
                                         ? "text-indigo-600"
-                                        : "text-gray-600 hover:text-gray-900"
+                                        : "text-gray-500 hover:text-gray-800"
                                 )}
                             >
                                 {tab.icon}
-                                {tab.label}
+                                <span>{tab.label}</span>
                                 {activeTabModal === tab.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full" />
                                 )}
                             </button>
                         ))}
@@ -2084,231 +2230,286 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
                     {activeTabModal === 'details' && (
-                        <div className="grid grid-cols-2 gap-6">
-                            <DetailItem label="Item Name" value={item.name} />
-                            <DetailItem label="SKU" value={item.sku || 'N/A'} />
-                            <DetailItem label="Category" value={item.category} />
-                            <DetailItem label="Item Type" value={item.itemType} />
-                            <DetailItem
-                                label="Current Quantity"
-                                value={`${item.quantity.toLocaleString()} ${item.unit}`}
-                                highlight={item.quantity <= item.minThreshold}
-                            />
-                            <DetailItem label="Min Threshold" value={`${item.minThreshold.toLocaleString()} ${item.unit}`} />
-                            {item.maxCapacity && (
-                                <DetailItem label="Max Capacity" value={`${item.maxCapacity.toLocaleString()} ${item.unit}`} />
-                            )}
-                            <DetailItem label="Unit Cost" value={`₦${item.unitCost.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`} />
-                            <DetailItem
-                                label="Total Value"
-                                value={`₦${item.totalValue.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`}
-                            />
-                            <DetailItem label="Storage Location" value={`${item.location.name} (${item.location.type})`} />
-                            {item.expiryDate && (
-                                <DetailItem
-                                    label="Expiry Date"
-                                    value={new Date(item.expiryDate).toLocaleDateString()}
-                                    highlight={new Date(item.expiryDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
-                                />
-                            )}
-                            {item.batchNumber && <DetailItem label="Batch Number" value={item.batchNumber} />}
-                            {item.supplier && <DetailItem label="Supplier" value={item.supplier} />}
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            {/* Key Stats */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Quantity</div>
+                                    <div className="text-2xl font-bold text-gray-900">{item.quantity.toLocaleString()}</div>
+                                    <div className="text-xs text-gray-400 mt-1">{item.unit}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Unit Cost</div>
+                                    <div className="text-2xl font-bold text-gray-900">₦{item.unitCost.toLocaleString()}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Value</div>
+                                    <div className="text-2xl font-bold text-indigo-600">₦{item.totalValue.toLocaleString()}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Status</div>
+                                    <div className={cn("text-lg font-bold", item.quantity <= item.minThreshold ? "text-rose-600" : "text-emerald-600")}>
+                                        {item.quantity <= item.minThreshold ? 'Reorder' : 'Good'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                                    <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                        <Package size={18} className="text-indigo-500" />
+                                        Basic Information
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <DetailItem label="Item Name" value={item.name} />
+                                        <DetailItem label="SKU" value={item.sku || 'N/A'} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <DetailItem label="Category" value={item.category} />
+                                            <DetailItem label="Type" value={item.itemType} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                                    <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                        <Warehouse size={18} className="text-indigo-500" />
+                                        Storage & Limits
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <DetailItem label="Location" value={`${item.location.name} (${item.location.type})`} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <DetailItem label="Min Threshold" value={`${item.minThreshold.toLocaleString()} ${item.unit}`} />
+                                            <DetailItem label="Max Capacity" value={item.maxCapacity ? `${item.maxCapacity.toLocaleString()} ${item.unit}` : 'N/A'} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4 md:col-span-2">
+                                    <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                        <Clipboard size={18} className="text-indigo-500" />
+                                        Tracking Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {item.expiryDate && (
+                                            <DetailItem
+                                                label="Expiry Date"
+                                                value={new Date(item.expiryDate).toLocaleDateString()}
+                                                highlight={new Date(item.expiryDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
+                                            />
+                                        )}
+                                        {item.batchNumber && <DetailItem label="Batch Number" value={item.batchNumber} />}
+                                        {item.supplier && <DetailItem label="Supplier" value={item.supplier} />}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Audit Trail */}
-                            <div className="col-span-2 pt-4 border-t border-gray-200 mt-4">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                    <Clock size={16} />
+                            <div className="pt-6 border-t border-gray-200">
+                                <h4 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                                    <Activity size={16} />
                                     Audit Trail
                                 </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <DetailItem
-                                        label="Added By"
-                                        value={item.createdBy || 'System'}
-                                    />
-                                    <DetailItem
-                                        label="Added On"
-                                        value={item.createdAt ? new Date(item.createdAt).toLocaleString() : 'N/A'}
-                                    />
+                                <div className="flex gap-8 text-sm text-gray-600">
+                                    <div>
+                                        <span className="text-gray-400 mr-2">Added By:</span>
+                                        <span className="font-medium">{item.createdBy || 'System'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-400 mr-2">Added On:</span>
+                                        <span className="font-medium">{item.createdAt ? new Date(item.createdAt).toLocaleString() : 'N/A'}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {activeTabModal === 'edit' && (
-                        <form onSubmit={handleUpdate} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                        <form onSubmit={handleUpdate} className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Item Name *</label>
                                     <input
                                         type="text"
                                         name="name"
                                         defaultValue={item.name}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">SKU</label>
                                     <input
                                         type="text"
                                         name="sku"
                                         defaultValue={item.sku || ''}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                                    <select
-                                        name="category"
-                                        defaultValue={item.category}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                    >
-                                        <option value="Raw Material">Raw Material</option>
-                                        <option value="Consumable">Consumable</option>
-                                        <option value="Equipment">Equipment</option>
-                                        <option value="Asset">Asset</option>
-                                    </select>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Category *</label>
+                                    <div className="relative">
+                                        <select
+                                            name="category"
+                                            defaultValue={item.category}
+                                            required
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none"
+                                        >
+                                            <option value="Raw Material">Raw Material</option>
+                                            <option value="Consumable">Consumable</option>
+                                            <option value="Equipment">Equipment</option>
+                                            <option value="Asset">Asset</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Item Type</label>
-                                    <select
-                                        name="itemType"
-                                        defaultValue={item.itemType}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                    >
-                                        <option value="General">General</option>
-                                        <option value="Cement">Cement</option>
-                                        <option value="Aggregate">Aggregate</option>
-                                        <option value="Admixture">Admixture</option>
-                                    </select>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Item Type</label>
+                                    <div className="relative">
+                                        <select
+                                            name="itemType"
+                                            defaultValue={item.itemType}
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none"
+                                        >
+                                            <option value="General">General</option>
+                                            <option value="Cement">Cement</option>
+                                            <option value="Aggregate">Aggregate</option>
+                                            <option value="Admixture">Admixture</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Storage Location *</label>
-                                    <select
-                                        name="locationId"
-                                        defaultValue={item.location.id}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                    >
-                                        {locations.map(loc => (
-                                            <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
-                                        ))}
-                                    </select>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Storage Location *</label>
+                                    <div className="relative">
+                                        <select
+                                            name="locationId"
+                                            defaultValue={item.location.id}
+                                            required
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none"
+                                        >
+                                            {locations.map(loc => (
+                                                <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
-                                    <select
-                                        name="unit"
-                                        defaultValue={item.unit}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                    >
-                                        <option value="kg">Kilograms (kg)</option>
-                                        <option value="liters">Liters</option>
-                                        <option value="pcs">Pieces</option>
-                                        <option value="m³">Cubic Meters (m³)</option>
-                                        <option value="tons">Tons</option>
-                                    </select>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit *</label>
+                                    <div className="relative">
+                                        <select
+                                            name="unit"
+                                            defaultValue={item.unit}
+                                            required
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none"
+                                        >
+                                            <option value="kg">Kilograms (kg)</option>
+                                            <option value="liters">Liters</option>
+                                            <option value="pcs">Pieces</option>
+                                            <option value="m³">Cubic Meters (m³)</option>
+                                            <option value="tons">Tons</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Capacity</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Max Capacity</label>
                                     <input
                                         type="number"
                                         name="maxCapacity"
                                         defaultValue={item.maxCapacity || ''}
                                         step="0.01"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Min Threshold *</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Min Threshold *</label>
                                     <input
                                         type="number"
                                         name="minThreshold"
                                         defaultValue={item.minThreshold}
                                         step="0.01"
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₦) *</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit Cost (₦) *</label>
                                     <input
                                         type="number"
                                         name="unitCost"
                                         defaultValue={item.unitCost}
                                         step="0.01"
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Expiry Date</label>
                                     <input
                                         type="date"
                                         name="expiryDate"
                                         defaultValue={item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : ''}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Batch Number</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Batch Number</label>
                                     <input
                                         type="text"
                                         name="batchNumber"
                                         defaultValue={item.batchNumber || ''}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Supplier</label>
                                     <input
                                         type="text"
                                         name="supplier"
                                         defaultValue={item.supplier || ''}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4 border-t">
+                            <div className="flex gap-4 pt-6 border-t border-gray-200">
                                 <button
                                     type="button"
                                     onClick={handleDelete}
                                     disabled={isPending}
-                                    className="px-4 py-3 border border-red-200 text-red-700 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center gap-2"
+                                    className="px-6 py-4 border border-rose-200 text-rose-700 rounded-xl font-bold hover:bg-rose-50 transition-colors flex items-center gap-2"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={20} />
                                     Delete Item
                                 </button>
                                 <div className="flex-1" />
                                 <button
                                     type="button"
                                     onClick={() => setActiveTabModal('details')}
-                                    className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                                    className="px-6 py-4 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isPending}
-                                    className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2"
+                                    className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
                                 >
-                                    {isPending && <Loader2 size={18} className="animate-spin" />}
+                                    {isPending && <Loader2 size={20} className="animate-spin" />}
                                     {isPending ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
@@ -2316,11 +2517,15 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                     )}
 
                     {activeTabModal === 'history' && (
-                        <TransactionHistory itemId={item.id} userRole={userRole} />
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <TransactionHistory itemId={item.id} userRole={userRole} />
+                        </div>
                     )}
 
                     {activeTabModal === 'pricing' && (
-                        <PriceHistory itemId={item.id} currentPrice={item.unitCost} unit={item.unit} />
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <PriceHistory itemId={item.id} currentPrice={item.unitCost} unit={item.unit} />
+                        </div>
                     )}
                 </div>
             </div>
@@ -2331,13 +2536,13 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
 // Helper component for detail items
 function DetailItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
     return (
-        <div className="bg-gray-50 p-4 rounded-xl">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</div>
+        <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</div>
             <div className={cn(
-                "text-sm font-semibold",
-                highlight ? "text-red-600" : "text-gray-900"
+                "text-base font-medium",
+                highlight ? "text-rose-600" : "text-gray-900"
             )}>
-                {value}
+                {value || '—'}
             </div>
         </div>
     );

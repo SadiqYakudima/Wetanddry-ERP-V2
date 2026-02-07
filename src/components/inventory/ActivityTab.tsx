@@ -975,58 +975,81 @@ function AuditTrailSubTab() {
 
 // ==================== TRANSACTION DETAIL MODAL ====================
 
+// ==================== TRANSACTION DETAIL MODAL ====================
+
 function TransactionDetailModal({ transaction, onClose }: { transaction: StockTransaction; onClose: () => void }) {
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
                 {/* Header */}
                 <div className={cn(
-                    "p-6 text-white",
-                    transaction.type === 'IN' ? "bg-gradient-to-r from-emerald-500 to-emerald-600" :
-                        transaction.type === 'OUT' ? "bg-gradient-to-r from-blue-500 to-blue-600" :
-                            "bg-gradient-to-r from-gray-500 to-gray-600"
+                    "p-6 text-white relative overflow-hidden",
+                    transaction.type === 'IN' ? "bg-gradient-to-br from-emerald-600 to-teal-700" :
+                        transaction.type === 'OUT' ? "bg-gradient-to-br from-blue-600 to-indigo-700" :
+                            "bg-gradient-to-br from-gray-600 to-gray-700"
                 )}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            {transaction.type === 'IN' ? <ArrowDownRight size={24} /> :
-                                transaction.type === 'OUT' ? <ArrowUpRight size={24} /> :
-                                    <RefreshCw size={24} />}
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        {transaction.type === 'IN' ? <ArrowDownRight size={100} /> :
+                            transaction.type === 'OUT' ? <ArrowUpRight size={100} /> :
+                                <RefreshCw size={100} />}
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                {transaction.type === 'IN' ? <ArrowDownRight size={24} /> :
+                                    transaction.type === 'OUT' ? <ArrowUpRight size={24} /> :
+                                        <RefreshCw size={24} />}
+                            </div>
                             <div>
-                                <h3 className="text-xl font-bold">
+                                <h3 className="text-xl font-bold tracking-tight">
                                     {transaction.type === 'IN' ? 'Stock In' : transaction.type === 'OUT' ? 'Stock Out' : 'Adjustment'} Details
                                 </h3>
-                                <p className="text-white/80 text-sm">Transaction ID: {transaction.id.slice(0, 8)}...</p>
+                                <p className="text-white/80 text-sm font-mono mt-0.5">ID: {transaction.id.slice(0, 8)}</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-6">
+                <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
                     {/* Item Info */}
-                    <div>
-                        <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Item Information</h4>
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                        <h4 className="flex items-center gap-2 font-semibold text-gray-900 border-b border-gray-100 pb-2">
+                            <Package size={18} className="text-gray-500" />
+                            Item Information
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailRow label="Item Name" value={transaction.item.name} />
                             <DetailRow label="Location" value={transaction.item.location.name} />
-                            <DetailRow label="Quantity" value={`${transaction.quantity.toLocaleString()} ${transaction.item.unit}`} highlight />
+                            <DetailRow
+                                label="Quantity"
+                                value={`${transaction.type === 'OUT' ? '-' : '+'}${transaction.quantity.toLocaleString()} ${transaction.item.unit}`}
+                                highlight={true}
+                                highlightColor={transaction.type === 'OUT' ? 'text-blue-600' : 'text-emerald-600'}
+                            />
                             <DetailRow label="Unit Cost" value={transaction.unitCostAtTime ? `₦${transaction.unitCostAtTime.toLocaleString()}` : '—'} />
-                            <DetailRow label="Total Value" value={transaction.totalCost ? `₦${transaction.totalCost.toLocaleString()}` : '—'} highlight />
+                            <DetailRow label="Total Value" value={transaction.totalCost ? `₦${transaction.totalCost.toLocaleString()}` : '—'} />
                         </div>
                     </div>
 
                     {/* Document References */}
                     {(transaction.supplierName || transaction.invoiceNumber || transaction.waybillNumber || transaction.atcNumber || transaction.batchNumber) && (
-                        <div>
-                            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Document References</h4>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                            <h4 className="flex items-center gap-2 font-semibold text-gray-900 border-b border-gray-100 pb-2">
+                                <Clipboard size={18} className="text-gray-500" />
+                                Document References
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {transaction.supplierName && <DetailRow label="Supplier" value={transaction.supplierName} />}
                                 {transaction.invoiceNumber && <DetailRow label="Invoice Number" value={transaction.invoiceNumber} />}
                                 {transaction.waybillNumber && <DetailRow label="Waybill Number" value={transaction.waybillNumber} />}
-                                {transaction.atcNumber && <DetailRow label="ATC Number" value={transaction.atcNumber} highlight />}
+                                {transaction.atcNumber && <DetailRow label="ATC Number" value={transaction.atcNumber} />}
                                 {transaction.batchNumber && <DetailRow label="Batch Number" value={transaction.batchNumber} />}
                                 {transaction.deliveryDate && <DetailRow label="Delivery Date" value={new Date(transaction.deliveryDate).toLocaleDateString()} />}
                             </div>
@@ -1034,10 +1057,22 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: StockTr
                     )}
 
                     {/* Workflow Status */}
-                    <div>
-                        <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Workflow Status</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <DetailRow label="Status" value={transaction.status} highlight />
+                    <div className="space-y-4">
+                        <h4 className="flex items-center gap-2 font-semibold text-gray-900 border-b border-gray-100 pb-2">
+                            <Activity size={18} className="text-gray-500" />
+                            Workflow Status
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <DetailRow
+                                label="Status"
+                                value={transaction.status}
+                                badge={true}
+                                badgeColor={
+                                    transaction.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
+                                        transaction.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                                            'bg-red-100 text-red-700'
+                                }
+                            />
                             <DetailRow label="Performed By" value={transaction.performedBy || 'Unknown'} />
                             {transaction.receivedBy && <DetailRow label="Received By" value={transaction.receivedBy} />}
                             {transaction.approvedBy && <DetailRow label="Approved By" value={transaction.approvedBy} />}
@@ -1048,18 +1083,21 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: StockTr
 
                     {/* Reason/Notes */}
                     {(transaction.reason || transaction.notes) && (
-                        <div>
-                            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Notes</h4>
+                        <div className="space-y-4">
+                            <h4 className="flex items-center gap-2 font-semibold text-gray-900 border-b border-gray-100 pb-2">
+                                <Info size={18} className="text-gray-500" />
+                                Notes
+                            </h4>
                             {transaction.reason && (
-                                <div className="bg-gray-50 rounded-lg p-3 mb-2">
-                                    <span className="text-xs text-gray-500">Reason:</span>
+                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Reason</span>
                                     <p className="text-gray-700">{transaction.reason}</p>
                                 </div>
                             )}
                             {transaction.notes && (
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                    <span className="text-xs text-gray-500">Additional Notes:</span>
-                                    <p className="text-gray-700">{transaction.notes}</p>
+                                <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                                    <span className="text-xs font-bold text-amber-600 uppercase tracking-wider block mb-1">Additional Notes</span>
+                                    <p className="text-gray-800">{transaction.notes}</p>
                                 </div>
                             )}
                         </div>
@@ -1067,12 +1105,12 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: StockTr
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-medium transition-colors"
+                        className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-[0.98]"
                     >
-                        Close
+                        Close Details
                     </button>
                 </div>
             </div>
@@ -1080,11 +1118,39 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: StockTr
     );
 }
 
-function DetailRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function DetailRow({
+    label,
+    value,
+    highlight,
+    highlightColor,
+    badge,
+    badgeColor
+}: {
+    label: string;
+    value: string;
+    highlight?: boolean;
+    highlightColor?: string;
+    badge?: boolean;
+    badgeColor?: string;
+}) {
     return (
-        <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-500 mb-1">{label}</div>
-            <div className={cn("font-medium", highlight ? "text-blue-600" : "text-gray-900")}>{value}</div>
+        <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{label}</div>
+            {badge ? (
+                <span className={cn(
+                    "inline-flex items-center px-2.5 py-0.5 rounded-lg text-sm font-semibold",
+                    badgeColor || "bg-gray-100 text-gray-800"
+                )}>
+                    {value}
+                </span>
+            ) : (
+                <div className={cn(
+                    "text-base font-medium",
+                    highlight ? (highlightColor || "text-gray-900") : "text-gray-900"
+                )}>
+                    {value}
+                </div>
+            )}
         </div>
     );
 }
