@@ -5,7 +5,7 @@ import {
     ShoppingCart, Plus, Search, Eye, Trash2,
     CheckCircle, Clock, AlertCircle, Package, DollarSign,
     Calendar, Building2, FileText, X, ChevronRight,
-    CreditCard, ArrowRight, Check, Info, Box
+    CreditCard, ArrowRight, Check, Box
 } from 'lucide-react'
 import { hasPermission } from '@/lib/permissions'
 import {
@@ -1517,7 +1517,7 @@ function PaymentScheduleTab({
 
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
-                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800 leading-relaxed">
                     <span className="font-semibold block mb-1">How it works</span>
                     When payments are recorded, they are automatically matched to pending schedule items in order of due date. This helps track if the client is following the agreed payment plan.

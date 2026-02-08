@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Save, X, Calculator, Info } from 'lucide-react'
+import { Plus, Trash2, Save, X, Calculator, AlertCircle } from 'lucide-react'
 import { createRecipe, deleteRecipe } from '@/lib/actions/production'
 import { useRouter } from 'next/navigation'
 
@@ -154,7 +154,7 @@ function AddRecipeModal({
                     <form id="recipe-form" onSubmit={handleSubmit} onChange={handleCalc} className="p-8 space-y-8">
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                                <Info className="w-4 h-4" />
+                                <AlertCircle className="w-4 h-4" />
                                 {error}
                             </div>
                         )}

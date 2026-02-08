@@ -7,8 +7,8 @@ import {
     Package, AlertTriangle, ArrowUpRight, ArrowDownRight, Database, Search, Filter,
     Plus, ChevronDown, Clock, CheckCircle2, XCircle, Warehouse, FlaskConical,
     Calendar, DollarSign, Layers, Settings, Eye, Edit, Trash2, X, Loader2,
-    AlertCircle, TrendingUp, TrendingDown, BarChart3, History, Info, Save, Activity,
-    Container, Clipboard, Lock
+    AlertCircle, TrendingUp, TrendingDown, BarChart3, History, FileText, Save,
+    Container, ClipboardList, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ActivityTab, { PendingApproval, StockTransaction } from './ActivityTab';
@@ -249,7 +249,7 @@ export default function InventoryClient({
                         { id: 'items', label: 'All Items', icon: <Package size={18} /> },
                         { id: 'silos', label: 'Silo Management', icon: <Database size={18} /> },
                         { id: 'containers', label: 'Container Storage', icon: <Container size={18} /> },
-                        { id: 'activity', label: `Activity ${pendingCounts.total > 0 ? `(${pendingCounts.total})` : ''}`, icon: <Activity size={18} /> },
+                        { id: 'activity', label: `Activity ${pendingCounts.total > 0 ? `(${pendingCounts.total})` : ''}`, icon: <History size={18} /> },
                         { id: 'expiring', label: 'Expiring Items', icon: <AlertCircle size={18} /> }
                     ].map(tab => (
                         <button
@@ -1697,12 +1697,12 @@ function MaterialRequestModal({ items, onClose }: {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
                 <div className="p-6 bg-gradient-to-br from-amber-500 to-orange-600 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Clipboard size={100} />
+                        <ClipboardList size={100} />
                     </div>
                     <div className="flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
-                                <Clipboard size={24} />
+                                <ClipboardList size={24} />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold tracking-tight">Material Request</h3>
@@ -1908,7 +1908,7 @@ function SiloModal({ silo, onClose }: {
                                 placeholder="95000"
                             />
                             <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <Info size={12} />
+                                <AlertCircle size={12} />
                                 95,000 kg = 95 tons = 1,900 bags (50kg)
                             </p>
                         </div>
@@ -2204,7 +2204,7 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                 <div className="border-b border-gray-200 px-6 bg-gray-50/50 flex-shrink-0">
                     <div className="flex gap-6">
                         {[
-                            { id: 'details', label: 'Overview', icon: <Info size={18} /> },
+                            { id: 'details', label: 'Overview', icon: <FileText size={18} /> },
                             { id: 'edit', label: 'Edit Item', icon: <Edit size={18} /> },
                             { id: 'history', label: 'History', icon: <History size={18} /> },
                             { id: 'pricing', label: 'Pricing', icon: <DollarSign size={18} /> }
@@ -2288,7 +2288,7 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
 
                                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4 md:col-span-2">
                                     <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                        <Clipboard size={18} className="text-indigo-500" />
+                                        <ClipboardList size={18} className="text-indigo-500" />
                                         Tracking Details
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2308,7 +2308,7 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
                             {/* Audit Trail */}
                             <div className="pt-6 border-t border-gray-200">
                                 <h4 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                                    <Activity size={16} />
+                                    <History size={16} />
                                     Audit Trail
                                 </h4>
                                 <div className="flex gap-8 text-sm text-gray-600">
