@@ -55,6 +55,7 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
     const [activeTab, setActiveTab] = useState<'issuance' | 'deposits' | 'reconciliation'>('issuance')
     const [logError, setLogError] = useState<string | null>(null)
     const [targetType, setTargetType] = useState<'truck' | 'equipment'>('truck')
+    const [issuanceLiters, setIssuanceLiters] = useState<number>(0)
 
     const totalFuel = logs.reduce((acc, log) => acc + log.liters, 0)
     const totalCost = logs.reduce((acc, log) => acc + log.cost, 0)
@@ -324,6 +325,7 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
                                             <div className="relative">
                                                 <input name="liters" type="number" step="0.1" placeholder="0.0" required
                                                     max={currentStock > 0 ? currentStock : undefined}
+                                                    onChange={(e) => setIssuanceLiters(parseFloat(e.target.value) || 0)}
                                                     className="w-full pl-4 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                                 />
                                                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400 font-medium">L</div>
@@ -334,13 +336,16 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Cost</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Estimated Cost</label>
                                             <div className="relative">
                                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 font-medium">₦</div>
-                                                <input name="cost" type="number" step="0.01" placeholder="0.00" required
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                                />
+                                                <div className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium">
+                                                    {(issuanceLiters * blendedCostPerLiter).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </div>
                                             </div>
+                                            <p className="text-xs text-gray-500 mt-1.5">
+                                                Based on blended rate: <span className="font-semibold text-gray-700">₦{blendedCostPerLiter.toFixed(2)}/L</span>
+                                            </p>
                                         </div>
 
                                         {/* Mileage - only for trucks */}

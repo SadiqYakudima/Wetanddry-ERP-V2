@@ -23,7 +23,6 @@ export async function logFuel(formData: FormData): Promise<{ success: true } | {
         const targetType = formData.get('targetType') as string // 'truck' or 'equipment'
         const targetId = formData.get('targetId') as string
         const liters = parseFloat(formData.get('liters') as string)
-        const cost = parseFloat(formData.get('cost') as string)
         const mileageStr = formData.get('mileage') as string
         const newMileage = mileageStr ? parseInt(mileageStr) : null
 
@@ -31,18 +30,22 @@ export async function logFuel(formData: FormData): Promise<{ success: true } | {
         if (!session?.user?.role) return { error: 'Unauthorized' }
         checkPermission(session.user.role, 'log_fuel')
 
-        if (!targetId || isNaN(liters) || isNaN(cost)) {
+        if (!targetId || isNaN(liters) || liters <= 0) {
             return { error: 'Invalid input. Please fill all required fields.' }
         }
 
-        // Check fuel stock before allowing issuance
-        const [depositAgg, issuanceAgg] = await Promise.all([
+        // Check fuel stock before allowing issuance & compute blended cost
+        const [depositAgg, depositCostAgg, issuanceAgg] = await Promise.all([
             prisma.fuelDeposit.aggregate({ _sum: { liters: true } }),
+            prisma.fuelDeposit.aggregate({ _sum: { totalCost: true } }),
             prisma.fuelLog.aggregate({ _sum: { liters: true } }),
         ])
         const totalDeposited = depositAgg._sum.liters ?? 0
+        const totalDepositCost = depositCostAgg._sum.totalCost ?? 0
         const totalIssued = issuanceAgg._sum.liters ?? 0
         const currentStock = totalDeposited - totalIssued
+        const blendedCostPerLiter = totalDeposited > 0 ? totalDepositCost / totalDeposited : 0
+        const cost = Math.round((liters * blendedCostPerLiter) * 100) / 100
 
         if (liters > currentStock) {
             return {
