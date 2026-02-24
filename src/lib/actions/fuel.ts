@@ -35,6 +35,23 @@ export async function logFuel(formData: FormData): Promise<{ success: true } | {
             return { error: 'Invalid input. Please fill all required fields.' }
         }
 
+        // Check fuel stock before allowing issuance
+        const [depositAgg, issuanceAgg] = await Promise.all([
+            prisma.fuelDeposit.aggregate({ _sum: { liters: true } }),
+            prisma.fuelLog.aggregate({ _sum: { liters: true } }),
+        ])
+        const totalDeposited = depositAgg._sum.liters ?? 0
+        const totalIssued = issuanceAgg._sum.liters ?? 0
+        const currentStock = totalDeposited - totalIssued
+
+        if (liters > currentStock) {
+            return {
+                error: currentStock <= 0
+                    ? `Cannot issue fuel. Current stock is 0 L. Please record a deposit first.`
+                    : `Insufficient fuel stock. Current stock: ${currentStock.toFixed(1)} L, requested: ${liters} L.`
+            }
+        }
+
         if (targetType === 'truck') {
             if (newMileage === null || isNaN(newMileage)) {
                 return { error: 'Mileage is required for truck fuel issuance.' }

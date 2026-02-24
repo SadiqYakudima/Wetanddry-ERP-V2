@@ -37,6 +37,16 @@ export async function uploadToCloudinary(file: File, folder: string, resourceTyp
     });
 }
 
+/**
+ * Detect resource type from the original Cloudinary URL.
+ * URLs look like: https://res.cloudinary.com/.../image/upload/... or .../raw/upload/...
+ */
+export function detectResourceType(url: string): 'image' | 'raw' | 'video' {
+    if (url.includes('/image/upload/')) return 'image'
+    if (url.includes('/video/upload/')) return 'video'
+    return 'raw'
+}
+
 export function getSignedUrl(publicId: string, resourceType: 'image' | 'raw' | 'video' = 'raw') {
     return cloudinary.url(publicId, {
         secure: true,

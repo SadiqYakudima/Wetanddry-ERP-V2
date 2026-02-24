@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Fuel, TrendingUp, DollarSign, Droplet, Plus, Package, Zap, BarChart3 } from 'lucide-react'
+import { Fuel, TrendingUp, DollarSign, Droplet, Plus, Package, Zap, BarChart3, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import AddFuelDepositModal from './AddFuelDepositModal'
 import AddEquipmentModal from './AddEquipmentModal'
@@ -250,6 +250,16 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
                                             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{logError}</div>
                                         )}
 
+                                        {currentStock <= 0 && (
+                                            <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm p-3 rounded-lg flex items-start gap-2">
+                                                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                                                <div>
+                                                    <p className="font-medium">No fuel in stock</p>
+                                                    <p className="text-xs text-amber-600 mt-0.5">Record a fuel deposit before issuing fuel.</p>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Target Type Toggle */}
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">Issue To</label>
@@ -313,10 +323,14 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
                                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Liters Issued</label>
                                             <div className="relative">
                                                 <input name="liters" type="number" step="0.1" placeholder="0.0" required
+                                                    max={currentStock > 0 ? currentStock : undefined}
                                                     className="w-full pl-4 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                                 />
                                                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400 font-medium">L</div>
                                             </div>
+                                            <p className="text-xs text-gray-500 mt-1.5">
+                                                Available: <span className={cn("font-semibold", currentStock > 0 ? "text-emerald-600" : "text-red-600")}>{currentStock.toLocaleString(undefined, { maximumFractionDigits: 1 })} L</span>
+                                            </p>
                                         </div>
 
                                         <div>
@@ -347,9 +361,15 @@ export default function FuelClient({ logs, deposits, trucks, equipment, canLogFu
                                         )}
 
                                         <button type="submit"
-                                            className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-lg shadow-blue-100 active:scale-[0.98] transform duration-100"
+                                            disabled={currentStock <= 0}
+                                            className={cn(
+                                                "w-full py-2.5 text-white rounded-lg font-medium transition-colors transform duration-100",
+                                                currentStock > 0
+                                                    ? "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 active:scale-[0.98]"
+                                                    : "bg-gray-300 cursor-not-allowed"
+                                            )}
                                         >
-                                            Save Log Entry
+                                            {currentStock <= 0 ? 'No Stock Available' : 'Save Log Entry'}
                                         </button>
                                     </form>
                                 </div>

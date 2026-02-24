@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
-import { uploadToCloudinary, deleteFromCloudinary, getSignedUrl } from '@/lib/cloudinary'
+import { uploadToCloudinary, deleteFromCloudinary, getSignedUrl, detectResourceType } from '@/lib/cloudinary'
 import { auth } from '@/auth'
 import { checkPermission } from '@/lib/permissions'
 import {
@@ -86,7 +86,7 @@ export async function getTruck(id: string) {
     if (truck) {
         truck.documents = truck.documents.map(doc => ({
             ...doc,
-            url: getSignedUrl(doc.cloudinaryPublicId),
+            url: getSignedUrl(doc.cloudinaryPublicId, detectResourceType(doc.url)),
         }))
     }
 
