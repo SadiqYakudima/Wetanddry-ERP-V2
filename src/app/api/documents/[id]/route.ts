@@ -22,7 +22,7 @@ export async function GET(
 
     const { id } = await params
 
-    // Look up document in both tables, including cloudinaryPublicId
+    // Look up document in both tables
     let doc: { url: string; name: string; cloudinaryPublicId: string } | null =
         await prisma.truckDocument.findUnique({
             where: { id },
@@ -40,22 +40,17 @@ export async function GET(
         return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Build fresh URLs from the cloudinaryPublicId using the current cloud name.
-    // The stored url may reference an old/wrong cloud name.
-    // Try multiple resource types since 'auto' uploads can store as 'image' or 'raw'.
-    const resourceTypes: Array<'image' | 'raw'> = []
+    const debug = request.nextUrl.searchParams.get('debug') === '1'
+    const attempts: { url: string; status: number; type: string }[] = []
 
-    // Detect from stored URL if possible
-    if (doc.url.includes('/image/upload/')) {
-        resourceTypes.push('image', 'raw')
-    } else if (doc.url.includes('/raw/upload/')) {
-        resourceTypes.push('raw', 'image')
-    } else {
-        resourceTypes.push('image', 'raw')
-    }
+    // Try multiple approaches to fetch the document
+    const resourceTypes: Array<'image' | 'raw'> = doc.url.includes('/raw/upload/')
+        ? ['raw', 'image']
+        : ['image', 'raw']
 
     for (const resourceType of resourceTypes) {
-        const freshUrl = cloudinary.url(doc.cloudinaryPublicId, {
+        // Try signed URL
+        const signedUrl = cloudinary.url(doc.cloudinaryPublicId, {
             secure: true,
             resource_type: resourceType,
             sign_url: true,
@@ -63,12 +58,12 @@ export async function GET(
         })
 
         try {
-            const response = await fetch(freshUrl)
+            const response = await fetch(signedUrl)
+            attempts.push({ url: signedUrl, status: response.status, type: `signed-${resourceType}` })
 
             if (response.ok) {
                 const contentType = response.headers.get('content-type') || 'application/octet-stream'
                 const buffer = await response.arrayBuffer()
-
                 return new NextResponse(buffer, {
                     headers: {
                         'Content-Type': contentType,
@@ -77,19 +72,45 @@ export async function GET(
                     },
                 })
             }
-        } catch {
-            // Try next resource type
-            continue
+        } catch (e) {
+            attempts.push({ url: signedUrl, status: 0, type: `signed-${resourceType}-error` })
+        }
+
+        // Try unsigned URL
+        const unsignedUrl = cloudinary.url(doc.cloudinaryPublicId, {
+            secure: true,
+            resource_type: resourceType,
+            type: 'upload',
+        })
+
+        try {
+            const response = await fetch(unsignedUrl)
+            attempts.push({ url: unsignedUrl, status: response.status, type: `unsigned-${resourceType}` })
+
+            if (response.ok) {
+                const contentType = response.headers.get('content-type') || 'application/octet-stream'
+                const buffer = await response.arrayBuffer()
+                return new NextResponse(buffer, {
+                    headers: {
+                        'Content-Type': contentType,
+                        'Content-Disposition': `inline; filename="${doc.name}"`,
+                        'Cache-Control': 'private, max-age=3600',
+                    },
+                })
+            }
+        } catch (e) {
+            attempts.push({ url: unsignedUrl, status: 0, type: `unsigned-${resourceType}-error` })
         }
     }
 
-    // If signed URLs didn't work, try the stored URL directly as a last resort
+    // Try the stored URL directly as last resort
     try {
         const response = await fetch(doc.url)
+        attempts.push({ url: doc.url, status: response.status, type: 'stored-url' })
+
         if (response.ok) {
             const contentType = response.headers.get('content-type') || 'application/octet-stream'
             const buffer = await response.arrayBuffer()
-
             return new NextResponse(buffer, {
                 headers: {
                     'Content-Type': contentType,
@@ -98,8 +119,19 @@ export async function GET(
                 },
             })
         }
-    } catch {
-        // Fall through to error
+    } catch (e) {
+        attempts.push({ url: doc.url, status: 0, type: 'stored-url-error' })
+    }
+
+    // Return debug info if requested, otherwise generic error
+    if (debug) {
+        return NextResponse.json({
+            error: 'All fetch attempts failed',
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            publicId: doc.cloudinaryPublicId,
+            storedUrl: doc.url,
+            attempts,
+        }, { status: 502 })
     }
 
     return NextResponse.json(
