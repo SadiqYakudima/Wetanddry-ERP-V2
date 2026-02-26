@@ -11,14 +11,14 @@ export default function LoginPage() {
                     <div className="relative w-48 h-24 mb-2 flex items-center justify-center">
                         <Image
                             src="/logo.png"
-                            alt="Wet & Dry Logo"
+                            alt="Wetanddry Logo"
                             fill
                             className="object-contain"
                             priority
                         />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome Back</h1>
-                    <p className="text-slate-500 mt-2 text-sm">Sign in to Wet&Dry ERP</p>
+                    <p className="text-slate-500 mt-2 text-sm">Sign in to Wetanddry ERP</p>
                 </div>
 
                 <LoginForm />
