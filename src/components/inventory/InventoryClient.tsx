@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import ActivityTab, { PendingApproval, StockTransaction } from './ActivityTab';
+import StorageLocationsModal from './StorageLocationsModal';
 
 // Type definitions
 interface StorageLocation {
@@ -115,6 +116,7 @@ export default function InventoryClient({
     const [modalType, setModalType] = useState<'in' | 'out'>('in');
     const [showViewItemModal, setShowViewItemModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+    const [showLocationsModal, setShowLocationsModal] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const { can: clientCan } = usePermissions();
@@ -186,6 +188,15 @@ export default function InventoryClient({
                         >
                             <ArrowUpRight size={20} />
                             Stock Out
+                        </button>
+                    )}
+                    {can('manage_inventory') && (
+                        <button
+                            onClick={() => setShowLocationsModal(true)}
+                            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl hover:from-amber-600 hover:to-amber-700 font-medium shadow-lg shadow-amber-500/25 flex items-center gap-2 transition-all"
+                        >
+                            <Settings size={20} />
+                            Storage Locations
                         </button>
                     )}
                     {can('create_material_requests') && (
@@ -778,6 +789,14 @@ export default function InventoryClient({
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* Storage Locations Modal */}
+            {showLocationsModal && (
+                <StorageLocationsModal
+                    locations={locations}
+                    onClose={() => setShowLocationsModal(false)}
+                />
             )}
 
             {/* Stock In/Out Modal */}

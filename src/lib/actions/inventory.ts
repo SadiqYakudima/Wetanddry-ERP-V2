@@ -868,6 +868,55 @@ export async function createStorageLocation(formData: FormData) {
     return { success: true, location }
 }
 
+export async function updateStorageLocation(id: string, formData: FormData) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'manage_inventory')
+
+    const name = formData.get('name') as string
+    const type = formData.get('type') as string
+    const description = formData.get('description') as string
+
+    if (!name || !type) {
+        throw new Error('Name and type are required')
+    }
+
+    // Check for duplicate name (excluding current)
+    const existing = await prisma.storageLocation.findFirst({
+        where: { name, id: { not: id } }
+    })
+    if (existing) {
+        throw new Error(`A storage location with name "${name}" already exists`)
+    }
+
+    await prisma.storageLocation.update({
+        where: { id },
+        data: { name, type, description: description || null }
+    })
+
+    revalidatePath('/inventory')
+    return { success: true }
+}
+
+export async function deleteStorageLocation(id: string) {
+    const session = await auth()
+    if (!session?.user?.role) throw new Error('Unauthorized')
+    checkPermission(session.user.role, 'manage_inventory')
+
+    // Check if location has items
+    const itemCount = await prisma.inventoryItem.count({
+        where: { locationId: id }
+    })
+    if (itemCount > 0) {
+        throw new Error(`Cannot delete: this location has ${itemCount} item(s). Move or remove them first.`)
+    }
+
+    await prisma.storageLocation.delete({ where: { id } })
+
+    revalidatePath('/inventory')
+    return { success: true }
+}
+
 // ==================== CONTAINER MANAGEMENT ====================
 
 // Get all containers with their cement items
