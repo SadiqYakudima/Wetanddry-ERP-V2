@@ -4,6 +4,7 @@ import { createMaintenanceSchedule } from '@/lib/actions/trucks'
 import { X, CalendarClock, AlertCircle } from 'lucide-react'
 import { useFormStatus } from 'react-dom'
 import { useState } from 'react'
+import { DatePicker } from '@/components/ui/date-picker'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -131,11 +132,10 @@ export default function ScheduleMaintenanceModal({ truckId, truckMileage, onClos
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Next Due Date
                                 </label>
-                                <input
+                                <DatePicker
                                     name="nextDueDate"
-                                    type="date"
-                                    defaultValue={defaultNextDue.toISOString().split('T')[0]}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    value={defaultNextDue.toISOString().split('T')[0]}
+                                    className="focus:ring-green-500"
                                 />
                             </div>
                         </div>

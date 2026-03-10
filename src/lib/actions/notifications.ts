@@ -22,6 +22,7 @@ export type NotificationType =
     // Inventory Alerts
     | 'low_stock_alert'
     | 'silo_level_critical'
+    | 'reconciliation_completed'
     // Fleet & Maintenance
     | 'maintenance_due_date'
     | 'maintenance_due_mileage'
@@ -33,6 +34,18 @@ export type NotificationType =
     // Production
     | 'production_completed'
     | 'material_shortage'
+    // Orders & CRM
+    | 'new_order'
+    | 'order_confirmed'
+    | 'order_fulfilled'
+    | 'payment_received'
+    | 'payment_overdue'
+    // Expenses
+    | 'expense_pending'
+    | 'expense_approved'
+    | 'expense_rejected'
+    // Fuel
+    | 'fuel_deposit'
     // System
     | 'user_created'
     | 'role_changed';
@@ -71,6 +84,7 @@ const NOTIFICATION_CONFIG: Record<NotificationType, {
     // Inventory Alerts → Super Admin, Manager, Storekeeper (all have view_inventory)
     low_stock_alert: { defaultPriority: 'critical', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
     silo_level_critical: { defaultPriority: 'critical', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
+    reconciliation_completed: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
 
     // Fleet & Maintenance → Super Admin, Manager
     maintenance_due_date: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
@@ -85,6 +99,21 @@ const NOTIFICATION_CONFIG: Record<NotificationType, {
     // Production → completed to Super Admin, Manager; shortage to SA, Manager, Storekeeper
     production_completed: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
     material_shortage: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.STOREKEEPER] },
+
+    // Orders & CRM → Super Admin, Manager, Accountant
+    new_order: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT] },
+    order_confirmed: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT] },
+    order_fulfilled: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT] },
+    payment_received: { defaultPriority: 'medium', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT] },
+    payment_overdue: { defaultPriority: 'high', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT] },
+
+    // Expenses → Super Admin, Manager, Accountant
+    expense_pending: { defaultPriority: 'medium', requiredPermissions: ['approve_expenses'] },
+    expense_approved: { defaultPriority: 'medium' },
+    expense_rejected: { defaultPriority: 'medium' },
+
+    // Fuel → Super Admin, Manager
+    fuel_deposit: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN, Role.MANAGER] },
 
     // System/Admin → Super Admin only
     user_created: { defaultPriority: 'low', targetRoles: [Role.SUPER_ADMIN] },

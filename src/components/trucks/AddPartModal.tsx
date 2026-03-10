@@ -4,6 +4,7 @@ import { createPart } from '@/lib/actions/trucks'
 import { X, Cog, AlertCircle } from 'lucide-react'
 import { useFormStatus } from 'react-dom'
 import { useState } from 'react'
+import { DatePicker } from '@/components/ui/date-picker'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -165,12 +166,11 @@ export default function AddPartModal({ truckId, truckMileage, onClose }: AddPart
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Install Date <span className="text-red-500">*</span>
                             </label>
-                            <input
+                            <DatePicker
                                 name="installedDate"
-                                type="date"
                                 required
-                                defaultValue={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                value={new Date().toISOString().split('T')[0]}
+                                className="focus:ring-purple-500"
                             />
                         </div>
                         <div>
@@ -233,10 +233,9 @@ export default function AddPartModal({ truckId, truckMileage, onClose }: AddPart
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Warranty Expiry
                             </label>
-                            <input
+                            <DatePicker
                                 name="warrantyExpiry"
-                                type="date"
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                className="focus:ring-purple-500"
                             />
                         </div>
                     </div>

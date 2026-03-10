@@ -7,9 +7,10 @@ import { useLiveUpdates, formatRefreshTime } from '@/hooks/use-live-updates';
 import { useRouter } from 'next/navigation';
 import {
     Clock, CheckCircle2, XCircle, Search, Filter, ChevronDown, ArrowDownRight, ArrowUpRight,
-    Package, FileText, History, Download, AlertCircle, Loader2, X, Eye, RefreshCw, Calendar, Radio
+    Package, FileText, History, Download, AlertCircle, Loader2, X, Eye, RefreshCw, Calendar, Radio, Trash2
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { DatePicker } from '@/components/ui/date-picker';
 import ApprovalConfirmationModal from '@/components/shared/ApprovalConfirmationModal';
 
 // ==================== TYPE DEFINITIONS ====================
@@ -593,11 +594,13 @@ function MovementLogSubTab({
                                             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold",
                                             t.type === 'IN' ? "bg-emerald-100 text-emerald-700" :
                                                 t.type === 'OUT' ? "bg-blue-100 text-blue-700" :
-                                                    "bg-gray-100 text-gray-700"
+                                                    t.type === 'DELETE' ? "bg-red-100 text-red-700" :
+                                                        "bg-gray-100 text-gray-700"
                                         )}>
                                             {t.type === 'IN' ? <ArrowDownRight size={12} /> :
-                                                t.type === 'OUT' ? <ArrowUpRight size={12} /> : null}
-                                            {t.type === 'IN' ? 'Stock In' : t.type === 'OUT' ? 'Stock Out' : 'Adjustment'}
+                                                t.type === 'OUT' ? <ArrowUpRight size={12} /> :
+                                                    t.type === 'DELETE' ? <Trash2 size={12} /> : null}
+                                            {t.type === 'IN' ? 'Stock In' : t.type === 'OUT' ? 'Stock Out' : t.type === 'DELETE' ? 'Deleted' : 'Adjustment'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
@@ -786,6 +789,7 @@ function AuditTrailSubTab() {
         'stock_in': 'bg-emerald-100 text-emerald-700',
         'stock_out': 'bg-blue-100 text-blue-700',
         'adjustment': 'bg-gray-100 text-gray-700',
+        'deleted': 'bg-red-100 text-red-700',
         'item_approved': 'bg-purple-100 text-purple-700',
         'item_rejected': 'bg-red-100 text-red-700',
         'item_created': 'bg-amber-100 text-amber-700',
@@ -796,6 +800,7 @@ function AuditTrailSubTab() {
         'stock_in': 'Stock In',
         'stock_out': 'Stock Out',
         'adjustment': 'Adjustment',
+        'deleted': 'Deleted',
         'item_approved': 'Item Approved',
         'item_rejected': 'Item Rejected',
         'item_created': 'Item Created',
@@ -834,6 +839,7 @@ function AuditTrailSubTab() {
                             <option value="stock_in">Stock In</option>
                             <option value="stock_out">Stock Out</option>
                             <option value="adjustment">Adjustments</option>
+                            <option value="deleted">Deleted</option>
                             <option value="item_approved">Item Approvals</option>
                             <option value="item_rejected">Item Rejections</option>
                             <option value="production">Production</option>
@@ -865,18 +871,16 @@ function AuditTrailSubTab() {
                             </div>
                             {dateRange === 'custom' && (
                                 <div className="flex items-center gap-2">
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         value={customStartDate}
                                         onChange={(e) => setCustomStartDate(e.target.value)}
-                                        className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none"
+                                        className="px-3 py-2 bg-gray-50 border-gray-200 focus:border-blue-500 rounded-xl text-sm"
                                     />
                                     <span className="text-gray-400">to</span>
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         value={customEndDate}
                                         onChange={(e) => setCustomEndDate(e.target.value)}
-                                        className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none"
+                                        className="px-3 py-2 bg-gray-50 border-gray-200 focus:border-blue-500 rounded-xl text-sm"
                                     />
                                 </div>
                             )}
@@ -939,7 +943,9 @@ function AuditTrailSubTab() {
                                         {log.activityType === 'stock_out' && <ArrowUpRight size={12} />}
                                         {log.activityType === 'production' && <Package size={12} />}
                                         {(log.activityType === 'item_approved' || log.activityType === 'item_created') && <CheckCircle2 size={12} />}
+                                        {log.activityType === 'item_rejected' && <XCircle size={12} />}
                                         {log.activityType === 'adjustment' && <RefreshCw size={12} />}
+                                        {log.activityType === 'deleted' && <Trash2 size={12} />}
                                     </div>
 
                                     {/* Content */}

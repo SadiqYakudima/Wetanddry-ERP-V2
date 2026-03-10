@@ -835,6 +835,24 @@ model ProductionMaterialUsage {
   @@index([inventoryItemId])
 }
 
+// System Settings (singleton - one row)
+model SystemSettings {
+  id                  String   @id @default("default")
+  companyName         String   @default("Wet & Dry Ltd")
+  companyEmail        String?
+  companyPhone        String?
+  companyAddress      String?
+  currency            String   @default("NGN")
+  currencySymbol      String   @default("₦")
+  defaultLowStockThreshold  Float  @default(10)
+  defaultDrumLiters   Float    @default(205)
+  defaultGallonLiters Float    @default(25)
+  passwordMinLength   Int      @default(6)
+  sessionTimeoutMins  Int      @default(480)
+  updatedBy           String?
+  updatedAt           DateTime @updatedAt
+}
+
 // Duplicate Alert System
 
 model DuplicateAlert {

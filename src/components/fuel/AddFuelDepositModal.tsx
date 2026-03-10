@@ -4,7 +4,8 @@ import { createFuelDeposit } from '@/lib/actions/fuel'
 import { X, Plus, AlertCircle } from 'lucide-react'
 import { useFormStatus } from 'react-dom'
 import { useState } from 'react'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils';
+import { DatePicker } from '@/components/ui/date-picker';
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -72,11 +73,10 @@ export default function AddFuelDepositModal({ onClose }: AddFuelDepositModalProp
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Date
                         </label>
-                        <input
+                        <DatePicker
                             name="date"
-                            type="date"
-                            defaultValue={new Date().toISOString().split('T')[0]}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            value={new Date().toISOString().split('T')[0]}
+                            className="py-3 bg-gray-50 border-gray-200 focus:ring-emerald-500"
                         />
                     </div>
 

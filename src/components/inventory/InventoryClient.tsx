@@ -13,6 +13,7 @@ import {
 import { cn, formatCurrency } from '@/lib/utils';
 import ActivityTab, { PendingApproval, StockTransaction } from './ActivityTab';
 import StorageLocationsModal from './StorageLocationsModal';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // Type definitions
 interface StorageLocation {
@@ -1337,11 +1338,10 @@ function StockModal({ type, item, items, currentUser, onClose }: {
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Delivery Date</label>
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         name="deliveryDate"
-                                        defaultValue={new Date().toISOString().split('T')[0]}
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-gray-700"
+                                        value={new Date().toISOString().split('T')[0]}
+                                        className="py-3 bg-gray-50 border-gray-200 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500/10 text-gray-700"
                                     />
                                 </div>
                                 <div>
@@ -1648,17 +1648,6 @@ function AddItemModal({ locations, currentUser, onClose }: {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Initial Quantity</label>
-                                <input
-                                    type="number"
-                                    name="quantity"
-                                    step="0.01"
-                                    defaultValue="0"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
-                                />
-                            </div>
-
-                            <div>
                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Unit *</label>
                                 <select
                                     name="unit"
@@ -1676,6 +1665,17 @@ function AddItemModal({ locations, currentUser, onClose }: {
                                     <option value="drums">Drums</option>
                                     <option value="gallons">Gallons</option>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Initial Quantity</label>
+                                <input
+                                    type="number"
+                                    name="quantity"
+                                    step="0.01"
+                                    defaultValue="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-gray-400"
+                                />
                             </div>
 
                             {(selectedUnit === 'drums' || selectedUnit === 'gallons') && (
@@ -1747,10 +1747,9 @@ function AddItemModal({ locations, currentUser, onClose }: {
 
                             <div>
                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Expiry Date</label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     name="expiryDate"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all text-gray-700"
+                                    className="py-3 bg-gray-50 border-gray-200 focus:bg-white focus:border-purple-500 focus:ring-purple-500/10 text-gray-700"
                                 />
                             </div>
 
@@ -2571,11 +2570,10 @@ function ViewItemModal({ item, locations, onClose, userRole }: {
 
                                 <div>
                                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Expiry Date</label>
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         name="expiryDate"
-                                        defaultValue={item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : ''}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                                        value={item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : ''}
+                                        className="py-3 bg-white border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/10"
                                     />
                                 </div>
 

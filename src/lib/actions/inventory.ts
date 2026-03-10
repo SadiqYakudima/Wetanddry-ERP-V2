@@ -634,8 +634,8 @@ export async function deleteInventoryItem(id: string) {
             prisma.stockTransaction.create({
                 data: {
                     itemId: id,
-                    type: 'ADJUSTMENT',
-                    quantity: -item.quantity,
+                    type: 'DELETE',
+                    quantity: item.quantity,
                     reason: `Item deleted by ${session.user.name || session.user.email}`,
                     performedBy: session.user.name || session.user.email || 'Unknown',
                     status: 'Approved',
@@ -650,7 +650,6 @@ export async function deleteInventoryItem(id: string) {
                     status: 'Deleted',
                     quantity: 0,
                     totalValue: 0,
-                    name: `[DELETED] ${item.name}`,
                 }
             }),
         ])
@@ -1887,7 +1886,7 @@ export async function getPendingApprovals() {
 
 export interface AuditLogFilters {
     search?: string;
-    activityType?: 'stock_in' | 'stock_out' | 'adjustment' | 'item_created' | 'item_approved' | 'item_rejected' | 'production' | 'all';
+    activityType?: 'stock_in' | 'stock_out' | 'adjustment' | 'deleted' | 'item_created' | 'item_approved' | 'item_rejected' | 'production' | 'all';
     startDate?: Date;
     endDate?: Date;
     page?: number;
@@ -1911,7 +1910,7 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
     if (endDate) dateFilter.lte = endDate
 
     // Fetch from multiple sources based on activity type
-    const fetchTransactions = activityType === 'all' || ['stock_in', 'stock_out', 'adjustment'].includes(activityType)
+    const fetchTransactions = activityType === 'all' || ['stock_in', 'stock_out', 'adjustment', 'deleted'].includes(activityType)
     const fetchItems = activityType === 'all' || ['item_created', 'item_approved', 'item_rejected'].includes(activityType)
     const fetchProduction = activityType === 'all' || activityType === 'production'
 
@@ -1919,7 +1918,8 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
     const transactionTypeMap: Record<string, string> = {
         'stock_in': 'IN',
         'stock_out': 'OUT',
-        'adjustment': 'ADJUSTMENT'
+        'adjustment': 'ADJUSTMENT',
+        'deleted': 'DELETE'
     }
     const transactionTypeFilter = transactionTypeMap[activityType]
 
@@ -1932,9 +1932,9 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
                 ...(hasDateFilter ? { createdAt: dateFilter } : {}),
                 ...(search ? {
                     OR: [
-                        { item: { is: { name: { contains: search } } } },
-                        { performedBy: { contains: search } },
-                        { approvedBy: { contains: search } },
+                        { item: { is: { name: { contains: search, mode: 'insensitive' as const } } } },
+                        { performedBy: { contains: search, mode: 'insensitive' as const } },
+                        { approvedBy: { contains: search, mode: 'insensitive' as const } },
                     ]
                 } : {})
             },
@@ -1954,9 +1954,9 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
                 ],
                 ...(search ? {
                     OR: [
-                        { name: { contains: search } },
-                        { createdBy: { contains: search } },
-                        { approvedBy: { contains: search } },
+                        { name: { contains: search, mode: 'insensitive' as const } },
+                        { createdBy: { contains: search, mode: 'insensitive' as const } },
+                        { approvedBy: { contains: search, mode: 'insensitive' as const } },
                     ]
                 } : {})
             },
@@ -1969,8 +1969,8 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
                 ...(hasDateFilter ? { createdAt: dateFilter } : {}),
                 ...(search ? {
                     OR: [
-                        { recipe: { is: { name: { contains: search } } } },
-                        { operatorName: { contains: search } },
+                        { recipe: { is: { name: { contains: search, mode: 'insensitive' as const } } } },
+                        { operatorName: { contains: search, mode: 'insensitive' as const } },
                     ]
                 } : {})
             },
@@ -1987,8 +1987,10 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
     const auditLogs = [
         ...transactions.map(t => ({
             id: `txn-${t.id}`,
-            activityType: t.type === 'IN' ? 'stock_in' : t.type === 'OUT' ? 'stock_out' : 'adjustment' as const,
-            description: `${t.type === 'IN' ? 'Stock In' : t.type === 'OUT' ? 'Stock Out' : 'Adjustment'}: ${t.quantity.toLocaleString()} ${t.item.unit} of ${t.item.name}`,
+            activityType: t.type === 'IN' ? 'stock_in' : t.type === 'OUT' ? 'stock_out' : t.type === 'DELETE' ? 'deleted' : 'adjustment' as const,
+            description: t.type === 'DELETE'
+                ? `Deleted: ${t.quantity.toLocaleString()} ${t.item.unit} of ${t.item.name}`
+                : `${t.type === 'IN' ? 'Stock In' : t.type === 'OUT' ? 'Stock Out' : 'Adjustment'}: ${t.quantity.toLocaleString()} ${t.item.unit} of ${t.item.name}`,
             details: {
                 itemName: t.item.name,
                 itemId: t.itemId,

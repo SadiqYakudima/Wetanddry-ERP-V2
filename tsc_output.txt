@@ -1,0 +1,1 @@
+src/components/ui/calendar.tsx(54,17): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.

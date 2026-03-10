@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { updateTruck } from '@/lib/actions/trucks'
 import { X, Save, Loader2, Truck } from 'lucide-react'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface EditTruckModalProps {
     truck: {
@@ -118,12 +119,11 @@ export default function EditTruckModal({ truck, onClose }: EditTruckModalProps) 
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Purchase Date <span className="text-red-500">*</span>
                             </label>
-                            <input
+                            <DatePicker
                                 name="purchaseDate"
-                                type="date"
                                 required
-                                defaultValue={formatDate(truck.purchaseDate)}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                value={formatDate(truck.purchaseDate)}
+                                className="focus:ring-blue-500"
                             />
                         </div>
                         <div>

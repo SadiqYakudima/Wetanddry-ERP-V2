@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Truck, Package, Fuel, FlaskConical, Users, Settings, Menu, LogOut, AlertTriangle, Loader2, Wallet, Building2, ShoppingCart, Copy } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, Fuel, FlaskConical, Users, Settings, Menu, LogOut, AlertTriangle, Loader2, Wallet, Building2, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOut } from 'next-auth/react';
 
@@ -53,8 +53,7 @@ const menuCategories: MenuCategory[] = [
         name: 'ADMINISTRATION',
         items: [
             { id: 'staff', name: 'Staff', icon: Users, href: '/staff', permission: 'view_staff' },
-            { id: 'users', name: 'Users', icon: Users, href: '/users', permission: 'manage_users' },
-            { id: 'duplicates', name: 'Duplicates', icon: Copy, href: '/settings/duplicates', permission: 'manage_system_settings' },
+            { id: 'settings', name: 'Settings', icon: Settings, href: '/settings' },
         ]
     },
 ];

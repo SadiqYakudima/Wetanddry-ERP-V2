@@ -4,6 +4,7 @@ import { createTruck } from '@/lib/actions/trucks'
 import { Save, Upload, ArrowLeft, Truck } from 'lucide-react'
 import Link from 'next/link'
 import { useFormStatus } from 'react-dom'
+import { DatePicker } from '@/components/ui/date-picker'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -91,11 +92,10 @@ export default function AddTruckForm() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Purchase Date <span className="text-red-500">*</span>
                             </label>
-                            <input
+                            <DatePicker
                                 name="purchaseDate"
-                                type="date"
                                 required
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className="focus:ring-blue-500"
                             />
                         </div>
                         <div>

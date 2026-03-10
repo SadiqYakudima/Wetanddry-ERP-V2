@@ -4,6 +4,7 @@ import { createMaintenanceRecord } from '@/lib/actions/trucks'
 import { X, Wrench, AlertCircle } from 'lucide-react'
 import { useFormStatus } from 'react-dom'
 import { useState } from 'react'
+import { DatePicker } from '@/components/ui/date-picker'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -92,12 +93,11 @@ export default function AddMaintenanceModal({ truckId, truckMileage, onClose }: 
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Date <span className="text-red-500">*</span>
                             </label>
-                            <input
+                            <DatePicker
                                 name="date"
-                                type="date"
                                 required
-                                defaultValue={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                value={new Date().toISOString().split('T')[0]}
+                                className="focus:ring-blue-500"
                             />
                         </div>
                         <div>

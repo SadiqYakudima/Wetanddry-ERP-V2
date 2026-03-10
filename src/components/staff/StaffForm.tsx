@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { Loader2, Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { createStaff, updateStaff, uploadStaffDocument, StaffData } from '@/lib/actions/staff'
+import { DatePicker } from '@/components/ui/date-picker'
 
 // Schema matching the server action validation
 const StaffSchema = z.object({
@@ -208,10 +209,9 @@ export default function StaffForm({ initialData, isEditing = false }: StaffFormP
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Date Joined</label>
-                        <input
+                        <DatePicker
                             {...register('joinedDate')}
-                            type="date"
-                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 outline-none transition-all"
+                            className="focus:bg-white focus:border-blue-500 py-2.5"
                         />
                         {errors.joinedDate && <p className="text-red-500 text-xs">{errors.joinedDate.message}</p>}
                     </div>

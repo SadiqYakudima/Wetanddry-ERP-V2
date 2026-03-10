@@ -12,6 +12,7 @@ import {
     startProductionRun,
     getScheduledRuns
 } from '@/lib/actions/production'
+import { DatePicker } from '@/components/ui/date-picker'
 
 // ==================== TYPES ====================
 
@@ -307,7 +308,7 @@ function ScheduleModal({
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Recipe *</label>
-                            <select name="recipeId" required className="w-full border rounded-lg px-3 py-2">
+                            <select name="recipeId" required className="w-full border rounded-lg px-4 py-3">
                                 <option value="">Select Recipe</option>
                                 {recipes.map(r => (
                                     <option key={r.id} value={r.id}>{r.productCode} - {r.name}</option>
@@ -316,7 +317,7 @@ function ScheduleModal({
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Silo *</label>
-                            <select name="siloId" required className="w-full border rounded-lg px-3 py-2">
+                            <select name="siloId" required className="w-full border rounded-lg px-4 py-3">
                                 <option value="">Select Silo</option>
                                 {silos.map(s => (
                                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -328,28 +329,28 @@ function ScheduleModal({
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (m³) *</label>
-                            <input type="number" name="plannedQuantity" step="0.5" min="1" required className="w-full border rounded-lg px-3 py-2" />
+                            <input type="number" name="plannedQuantity" step="0.5" min="1" required className="w-full border rounded-lg px-4 py-3" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date *</label>
-                            <input type="date" name="scheduledDate" defaultValue={defaultDate} required className="w-full border rounded-lg px-3 py-2" />
+                            <DatePicker name="scheduledDate" value={defaultDate} required className="px-4 py-3 rounded-lg" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                            <input type="time" name="plannedStartTime" className="w-full border rounded-lg px-3 py-2" />
+                            <input type="time" name="plannedStartTime" className="w-full border rounded-lg px-4 py-3" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                            <input type="time" name="plannedEndTime" className="w-full border rounded-lg px-3 py-2" />
+                            <input type="time" name="plannedEndTime" className="w-full border rounded-lg px-4 py-3" />
                         </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Client (Optional)</label>
-                        <select name="clientId" className="w-full border rounded-lg px-3 py-2">
+                        <select name="clientId" className="w-full border rounded-lg px-4 py-3">
                             <option value="">No Client</option>
                             {clients.map(c => (
                                 <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
@@ -359,7 +360,7 @@ function ScheduleModal({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea name="notes" rows={2} className="w-full border rounded-lg px-3 py-2" />
+                        <textarea name="notes" rows={2} className="w-full border rounded-lg px-4 py-3" />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
@@ -430,12 +431,12 @@ function RescheduleModal({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">New Date *</label>
-                        <input type="date" name="newScheduledDate" required className="w-full border rounded-lg px-3 py-2" />
+                        <DatePicker name="newScheduledDate" required className="px-4 py-3 rounded-lg" />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Delay *</label>
-                        <textarea name="delayReason" rows={2} required placeholder="e.g., Material shortage, equipment maintenance..." className="w-full border rounded-lg px-3 py-2" />
+                        <textarea name="delayReason" rows={2} required placeholder="e.g., Material shortage, equipment maintenance..." className="w-full border rounded-lg px-4 py-3" />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">

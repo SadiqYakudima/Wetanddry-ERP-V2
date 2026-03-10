@@ -9,6 +9,7 @@ import {
     ArrowUpRight, ArrowDownRight, Wallet, PieChart
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 import { getClients, createClient, getCRMMetrics } from '@/lib/actions/crm'
 
 // ==================== TYPE DEFINITIONS ====================
@@ -1234,18 +1235,16 @@ function ClientDetailModal({
                                         className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                                     />
                                 </div>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={dateFrom}
                                     onChange={(e) => setDateFrom(e.target.value)}
-                                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                    className="px-3 py-2 border-gray-200 focus:border-violet-500 rounded-lg text-sm"
                                 />
                                 <span className="text-gray-400 text-sm">to</span>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={dateTo}
                                     onChange={(e) => setDateTo(e.target.value)}
-                                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                    className="px-3 py-2 border-gray-200 focus:border-violet-500 rounded-lg text-sm"
                                 />
                             </div>
 
@@ -1337,20 +1336,18 @@ function ClientDetailModal({
                                 <div className="flex items-center gap-4">
                                     <div className="flex-1">
                                         <label className="block text-xs text-gray-500 mb-1">From</label>
-                                        <input
-                                            type="date"
+                                        <DatePicker
                                             value={reportDateFrom}
                                             onChange={(e) => setReportDateFrom(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                            className="px-3 py-2 border-gray-200 focus:border-violet-500 rounded-lg text-sm"
                                         />
                                     </div>
                                     <div className="flex-1">
                                         <label className="block text-xs text-gray-500 mb-1">To</label>
-                                        <input
-                                            type="date"
+                                        <DatePicker
                                             value={reportDateTo}
                                             onChange={(e) => setReportDateTo(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                            className="px-3 py-2 border-gray-200 focus:border-violet-500 rounded-lg text-sm"
                                         />
                                     </div>
                                 </div>

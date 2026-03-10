@@ -55,7 +55,7 @@ function IngredientInput({
                     <select
                         name={id}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                         onChange={(e) => onChange(e.target.value)}
                         value={selectedItemId || ''}
                     >
@@ -72,7 +72,7 @@ function IngredientInput({
                         step="0.01"
                         placeholder="0.00"
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-right pr-9"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm text-right pr-9"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium">
                         {selectedItem?.unit || '-'}

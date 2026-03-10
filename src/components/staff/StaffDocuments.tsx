@@ -5,6 +5,7 @@ import { FileText, Upload, Trash2, Loader2, Download, Eye, AlertCircle } from 'l
 import { uploadStaffDocument, deleteStaffDocument } from '@/lib/actions/staff'
 import { useRouter } from 'next/navigation'
 import DocumentViewerModal from '@/components/shared/DocumentViewerModal'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface StaffDocument {
     id: string
@@ -147,11 +148,10 @@ export default function StaffDocuments({ staffId, documents, canManageStaff }: S
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date (Optional)</label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={expiryDate}
                                     onChange={(e) => setExpiryDate(e.target.value)}
-                                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-blue-500 outline-none"
+                                    className="py-2 rounded-lg focus:border-blue-500"
                                 />
                             </div>
                             <div>

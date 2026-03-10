@@ -149,12 +149,12 @@ export default function StorageLocationsModal({ locations, onClose }: StorageLoc
                                     type="text"
                                     required
                                     placeholder="Location name"
-                                    className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                                 <select
                                     name="type"
                                     required
-                                    className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
                                     <option value="">Select type</option>
                                     {LOCATION_TYPES.map(t => (
@@ -166,7 +166,7 @@ export default function StorageLocationsModal({ locations, onClose }: StorageLoc
                                 name="description"
                                 type="text"
                                 placeholder="Description (optional)"
-                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                             <div className="flex justify-end gap-2">
                                 <button
@@ -206,13 +206,13 @@ export default function StorageLocationsModal({ locations, onClose }: StorageLoc
                                                 type="text"
                                                 required
                                                 defaultValue={loc.name}
-                                                className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                             <select
                                                 name="type"
                                                 required
                                                 defaultValue={loc.type}
-                                                className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
                                                 {LOCATION_TYPES.map(t => (
                                                     <option key={t} value={t}>{t}</option>
@@ -224,7 +224,7 @@ export default function StorageLocationsModal({ locations, onClose }: StorageLoc
                                             type="text"
                                             defaultValue={loc.description || ''}
                                             placeholder="Description (optional)"
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                         <div className="flex justify-end gap-2">
                                             <button

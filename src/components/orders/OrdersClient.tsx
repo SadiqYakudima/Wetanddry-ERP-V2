@@ -18,6 +18,7 @@ import {
     getOrder
 } from '@/lib/actions/orders'
 import { recordPayment, addPaymentScheduleItem, removePaymentScheduleItem } from '@/lib/actions/payments'
+import { DatePicker } from '@/components/ui/date-picker'
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -581,11 +582,10 @@ function NewOrderWizard({
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Required Date</label>
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         value={requiredDate}
                                         onChange={(e) => setRequiredDate(e.target.value)}
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-gray-700"
+                                        className="py-3 bg-gray-50 border-gray-200 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500/10 text-gray-700"
                                     />
                                 </div>
                                 <div>
@@ -1433,11 +1433,10 @@ function PaymentScheduleTab({
                     <div className="flex gap-3 items-end">
                         <div className="flex-1">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 value={newItem.dueDate}
                                 onChange={(e) => setNewItem({ ...newItem, dueDate: e.target.value })}
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="px-4 py-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 rounded-lg"
                             />
                         </div>
                         <div className="w-32">
@@ -1448,7 +1447,7 @@ function PaymentScheduleTab({
                                 onChange={(e) => setNewItem({ ...newItem, amount: e.target.value })}
                                 step="100"
                                 min="0"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             />
                         </div>
                         <div className="flex-[1.5]">
@@ -1458,13 +1457,13 @@ function PaymentScheduleTab({
                                 value={newItem.description}
                                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                                 placeholder="e.g., 30% Deposit"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             />
                         </div>
                         <button
                             onClick={handleAddItem}
                             disabled={isPending}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium h-[38px]"
+                            className="px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium h-[46px]"
                         >
                             Add
                         </button>

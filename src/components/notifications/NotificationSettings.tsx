@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, BellOff, Smartphone, Check, Loader2, AlertTriangle, Package, Truck, FlaskConical, Users } from 'lucide-react'
-import { useSession } from 'next-auth/react'
+import { Bell, BellOff, Smartphone, Check, Loader2, AlertTriangle, Package, Truck, FlaskConical, Users, ShoppingCart, Wallet, Fuel } from 'lucide-react'
 import { getPushPreference, updatePushSubscription, updateNotificationPreferences, testPushNotificationForCurrentUser } from '@/lib/actions/notifications'
 import type { NotificationType } from '@/lib/actions/notifications'
 
@@ -13,13 +12,27 @@ const NOTIFICATION_CATEGORIES: {
     types: { type: NotificationType; label: string; description: string }[]
 }[] = [
         {
-            name: 'Approvals',
+            name: 'Approval Requests',
             icon: Check,
             types: [
                 { type: 'new_inventory_item', label: 'New Inventory Items', description: 'When items are submitted for approval' },
                 { type: 'stock_transaction_pending', label: 'Stock Transactions', description: 'When stock movements need approval' },
                 { type: 'material_request_pending', label: 'Material Requests', description: 'When material requests are submitted' },
-                { type: 'item_approved', label: 'Approval Decisions', description: 'When your requests are approved or rejected' },
+                { type: 'expense_pending', label: 'Expense Approvals', description: 'When expenses are submitted for approval' },
+            ],
+        },
+        {
+            name: 'Approval Decisions',
+            icon: Check,
+            types: [
+                { type: 'item_approved', label: 'Item Approved', description: 'When your inventory items are approved' },
+                { type: 'item_rejected', label: 'Item Rejected', description: 'When your inventory items are rejected' },
+                { type: 'transaction_approved', label: 'Transaction Approved', description: 'When your stock transactions are approved' },
+                { type: 'transaction_rejected', label: 'Transaction Rejected', description: 'When your stock transactions are rejected' },
+                { type: 'request_approved', label: 'Request Approved', description: 'When your material requests are approved' },
+                { type: 'request_rejected', label: 'Request Rejected', description: 'When your material requests are rejected' },
+                { type: 'expense_approved', label: 'Expense Approved', description: 'When your expenses are approved' },
+                { type: 'expense_rejected', label: 'Expense Rejected', description: 'When your expenses are rejected' },
             ],
         },
         {
@@ -29,6 +42,18 @@ const NOTIFICATION_CATEGORIES: {
                 { type: 'low_stock_alert', label: 'Low Stock Alerts', description: 'When items fall below minimum threshold' },
                 { type: 'silo_level_critical', label: 'Silo Level Critical', description: 'When cement silos are running low' },
                 { type: 'material_shortage', label: 'Material Shortages', description: 'When production materials are insufficient' },
+                { type: 'reconciliation_completed', label: 'Reconciliation Completed', description: 'When stock reconciliation is finished' },
+            ],
+        },
+        {
+            name: 'Orders & Payments',
+            icon: ShoppingCart,
+            types: [
+                { type: 'new_order', label: 'New Orders', description: 'When a new sales order is created' },
+                { type: 'order_confirmed', label: 'Order Confirmed', description: 'When an order is confirmed' },
+                { type: 'order_fulfilled', label: 'Order Fulfilled', description: 'When an order is fully delivered' },
+                { type: 'payment_received', label: 'Payment Received', description: 'When a payment is recorded' },
+                { type: 'payment_overdue', label: 'Payment Overdue', description: 'When a payment is past due date' },
             ],
         },
         {
@@ -39,6 +64,13 @@ const NOTIFICATION_CATEGORIES: {
                 { type: 'maintenance_due_mileage', label: 'Mileage Alerts', description: 'When mileage thresholds are reached' },
                 { type: 'document_expiring', label: 'Document Expiry', description: 'When documents are about to expire' },
                 { type: 'spare_parts_low', label: 'Spare Parts Low', description: 'When spare parts inventory is low' },
+            ],
+        },
+        {
+            name: 'Fuel',
+            icon: Fuel,
+            types: [
+                { type: 'fuel_deposit', label: 'Fuel Deposits', description: 'When bulk fuel purchases are recorded' },
             ],
         },
         {
@@ -72,7 +104,6 @@ interface NotificationPreference {
 }
 
 export default function NotificationSettings() {
-    const { data: session, status: authStatus } = useSession()
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [pushEnabled, setPushEnabled] = useState(false)
@@ -94,8 +125,6 @@ export default function NotificationSettings() {
     // Load preferences
     useEffect(() => {
         const loadPreferences = async () => {
-            if (authStatus !== 'authenticated') return
-
             setIsLoading(true)
             try {
                 const pref = await getPushPreference()
@@ -116,7 +145,7 @@ export default function NotificationSettings() {
         }
 
         loadPreferences()
-    }, [authStatus])
+    }, [])
 
     const handleTogglePush = async () => {
         if (!pushSupported) return
@@ -189,17 +218,9 @@ export default function NotificationSettings() {
         }
     }
 
-    if (authStatus !== 'authenticated') {
-        return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-                <p className="text-gray-500">Please sign in to manage notification settings.</p>
-            </div>
-        )
-    }
-
     if (isLoading) {
         return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
             </div>
         )
@@ -208,7 +229,7 @@ export default function NotificationSettings() {
     return (
         <div className="space-y-6">
             {/* Push Notifications Global Toggle */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center ${pushEnabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
@@ -297,9 +318,9 @@ export default function NotificationSettings() {
             )}
 
             {/* Per-Type Preferences */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100">
-                    <h3 className="font-semibold text-gray-900">Notification Preferences</h3>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-900">Notification Preferences</h3>
                     <p className="text-sm text-gray-500 mt-1">
                         Choose which notifications you want to receive
                     </p>

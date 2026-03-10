@@ -149,7 +149,7 @@ export default function ReconciliationClient({
                 <select
                     value={filter.status}
                     onChange={(e) => setFilter({ status: e.target.value })}
-                    className="px-3 py-2 border rounded-lg"
+                    className="px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                 >
                     <option value="all">All Status</option>
                     <option value="Draft">Draft</option>
